@@ -43,6 +43,7 @@
   <!-- 资源文件配置：复制到输出目录 -->
   <ItemGroup>
     <None Include="Resources\**" CopyToOutputDirectory="PreserveNewest" />
+    <None Include="tessdata\**" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
   <!-- 构建后事件：复制 pdfium.dll 到输出根目录 -->
@@ -62,6 +63,8 @@
     <TrimmerRootAssembly Include="itext.barcodes" />
     <TrimmerRootAssembly Include="LiteDB" />
     <TrimmerRootAssembly Include="Newtonsoft.Json" />
+    <TrimmerRootAssembly Include="Tesseract" />
+    <TrimmerRootAssembly Include="OpenCvSharp" />
   </ItemGroup>
   
   <!-- JSON序列化裁剪配置：保留所有模型类型 -->
@@ -88,5 +91,8 @@
     <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />
     <PackageReference Include="ReactiveUI" Version="20.1.63" />
     <PackageReference Include="System.Drawing.Common" Version="10.0.0" />
+    <PackageReference Include="Tesseract" Version="5.2.0" />
+    <PackageReference Include="OpenCvSharp4" Version="4.10.0.20241115" />
+    <PackageReference Include="OpenCvSharp4.runtime.win" Version="4.10.0.20241115" />
   </ItemGroup>
 </Project>

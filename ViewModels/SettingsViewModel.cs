@@ -73,6 +73,28 @@ public class SettingsViewModel : ViewModelBase
         set => SetProperty(ref _ecoCodePrinter, value);
     }
 
+    // ========== OCR区域配置 ==========
+    
+    private OcrRegion _trackingNumberRegion = new();
+    /// <summary>
+    /// 快递单号识别区域
+    /// </summary>
+    public OcrRegion TrackingNumberRegion
+    {
+        get => _trackingNumberRegion;
+        set => SetProperty(ref _trackingNumberRegion, value);
+    }
+    
+    private OcrRegion _packageCountRegion = new();
+    /// <summary>
+    /// 件数识别区域
+    /// </summary>
+    public OcrRegion PackageCountRegion
+    {
+        get => _packageCountRegion;
+        set => SetProperty(ref _packageCountRegion, value);
+    }
+
     // ========== 测试状态 ==========
     
     private Dictionary<PrinterType, bool> _isTesting = new()
@@ -127,6 +149,8 @@ public class SettingsViewModel : ViewModelBase
     public ICommand CancelCommand { get; }
     public ICommand RefreshPrintersCommand { get; }
     public ICommand TestPrintCommand { get; }
+    public ICommand ResetOcrRegionsCommand { get; }
+    public ICommand OpenOcrConfigCommand { get; }
 
     // ========== 事件 ==========
     
@@ -149,6 +173,8 @@ public class SettingsViewModel : ViewModelBase
         CancelCommand = new RelayCommand(Cancel);
         RefreshPrintersCommand = new AsyncRelayCommand(RefreshPrintersAsync);
         TestPrintCommand = new AsyncRelayCommand<PrinterType>(TestPrintAsync);
+        ResetOcrRegionsCommand = new RelayCommand(ResetOcrRegions);
+        OpenOcrConfigCommand = new AsyncRelayCommand(OpenOcrConfigAsync);
 
         // 加载数据
         _ = LoadDataAsync();
@@ -185,6 +211,23 @@ public class SettingsViewModel : ViewModelBase
                 PrinterName = config.EcoCodePrinter.PrinterName,
                 PaperWidthMm = config.EcoCodePrinter.PaperWidthMm,
                 PaperHeightMm = config.EcoCodePrinter.PaperHeightMm
+            };
+            
+            // 加载OCR区域配置
+            TrackingNumberRegion = new OcrRegion
+            {
+                X = config.TrackingNumberRegion.X,
+                Y = config.TrackingNumberRegion.Y,
+                Width = config.TrackingNumberRegion.Width,
+                Height = config.TrackingNumberRegion.Height
+            };
+            
+            PackageCountRegion = new OcrRegion
+            {
+                X = config.PackageCountRegion.X,
+                Y = config.PackageCountRegion.Y,
+                Width = config.PackageCountRegion.Width,
+                Height = config.PackageCountRegion.Height
             };
         }
         catch (Exception ex)
@@ -391,6 +434,23 @@ public class SettingsViewModel : ViewModelBase
                 PaperWidthMm = EcoCodePrinter.PaperWidthMm,
                 PaperHeightMm = EcoCodePrinter.PaperHeightMm
             };
+            
+            // 更新OCR区域配置
+            config.TrackingNumberRegion = new OcrRegion
+            {
+                X = TrackingNumberRegion.X,
+                Y = TrackingNumberRegion.Y,
+                Width = TrackingNumberRegion.Width,
+                Height = TrackingNumberRegion.Height
+            };
+            
+            config.PackageCountRegion = new OcrRegion
+            {
+                X = PackageCountRegion.X,
+                Y = PackageCountRegion.Y,
+                Width = PackageCountRegion.Width,
+                Height = PackageCountRegion.Height
+            };
 
             // 保存到数据库
             await _databaseService.SaveConfigAsync(config);
@@ -412,6 +472,57 @@ public class SettingsViewModel : ViewModelBase
     private void Cancel()
     {
         RequestClose?.Invoke(this, EventArgs.Empty);
+    }
+    
+    /// <summary>
+    /// 恢复OCR区域默认值
+    /// </summary>
+    private void ResetOcrRegions()
+    {
+        // 快递单号识别区域（左下角）
+        TrackingNumberRegion = new OcrRegion
+        {
+            X = 0.05f,
+            Y = 0.85f,
+            Width = 0.5f,
+            Height = 0.08f
+        };
+        
+        // 件数识别区域（右侧中间）
+        PackageCountRegion = new OcrRegion
+        {
+            X = 0.7f,
+            Y = 0.45f,
+            Width = 0.25f,
+            Height = 0.15f
+        };
+    }
+    
+    /// <summary>
+    /// 打开OCR可视化配置对话框
+    /// </summary>
+    private async Task OpenOcrConfigAsync()
+    {
+        try
+        {
+            var dialog = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+                .GetRequiredService<Views.OcrRegionConfigDialog>(App.Services!);
+            var viewModel = Microsoft.Extensions.DependencyInjection.ServiceProviderServiceExtensions
+                .GetRequiredService<OcrRegionConfigViewModel>(App.Services!);
+            
+            viewModel.OwnerWindow = dialog;
+            dialog.DataContext = viewModel;
+            
+            await dialog.ShowDialog(OwnerWindow!);
+            
+            // 对话框关闭后，重新加载配置以更新显示
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"打开OCR配置对话框失败: {ex.Message}");
+            await ShowErrorAsync($"打开配置对话框失败: {ex.Message}");
+        }
     }
 
     /// <summary>

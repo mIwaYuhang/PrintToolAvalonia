@@ -105,17 +105,27 @@ public partial class App : Application
         services.AddSingleton<IFileService, FileService>();
         services.AddSingleton<IDatabaseService, DatabaseService>();
         services.AddSingleton<IConfigService, ConfigService>();
+        services.AddSingleton<IPdfRenderService, PdfRenderService>();
+        services.AddSingleton<IOcrService, OcrService>();
+        services.AddSingleton<IImageMatchService, ImageMatchService>();
+        services.AddSingleton<IBarcodeGroupService, BarcodeGroupService>();
 
         // 注册 ViewModels
         services.AddTransient<MainWindowViewModel>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<HistoryViewModel>();
         services.AddTransient<EcoCodeViewModel>();
+        services.AddTransient<SinglePagePrintViewModel>();
+        services.AddTransient<OcrRegionConfigViewModel>();
+        services.AddTransient<LabelSelectionViewModel>();
 
         // 注册 Views
         services.AddTransient<MainWindow>();
         services.AddTransient<SettingsDialog>();
         services.AddTransient<HistoryDialog>();
+        services.AddTransient<SinglePagePrintDialog>();
+        services.AddTransient<OcrRegionConfigDialog>();
+        services.AddTransient<LabelSelectionDialog>();
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

@@ -3,11 +3,11 @@
         xmlns:vm="using:PrintToolAvalonia.ViewModels"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="750"
         x:Class="PrintToolAvalonia.Views.SettingsDialog"
         x:DataType="vm:SettingsViewModel"
         Title="打印机设置"
-        Width="600" Height="700"
+        Width="600" Height="750"
         WindowStartupLocation="CenterOwner"
         CanResize="False">
 
@@ -187,6 +187,38 @@
                         </Grid>
                         
                         <TextBlock Text="提示：点击'测试打印'将使用第一个可用的环保码文件进行测试打印"
+                                  FontSize="11"
+                                  Classes="secondary"
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- OCR识别区域配置 -->
+                <Border Classes="card">
+                    <StackPanel Spacing="15">
+                        <TextBlock Text="OCR识别区域配置" 
+                                  Classes="section-title"/>
+                        
+                        <TextBlock Text="配置OCR识别区域，用于自动识别快递单号和件数。"
+                                  FontSize="11"
+                                  Classes="secondary"
+                                  TextWrapping="Wrap"
+                                  Margin="0,0,0,10"/>
+                        
+                        <Button Content="打开可视化配置"
+                               Command="{Binding OpenOcrConfigCommand}"
+                               Classes="accent"
+                               HorizontalAlignment="Left"
+                               MinWidth="150">
+                            <Button.Content>
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <TextBlock Text="🖼️" FontSize="16"/>
+                                    <TextBlock Text="打开可视化配置" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button.Content>
+                        </Button>
+                        
+                        <TextBlock Text="提示：点击按钮后，加载一个PDF文件，然后用鼠标拖拽选择识别区域"
                                   FontSize="11"
                                   Classes="secondary"
                                   TextWrapping="Wrap"/>

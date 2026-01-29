@@ -170,13 +170,49 @@ public class WindowsPrintService : IPrintService
                 Console.WriteLine($"[PrintService] 边距设置: 0,0,0,0");
                 Console.WriteLine($"[PrintService] 横向打印: False");
                 
+                // 解析页码范围
+                var pagesToPrint = options.ParsePageRange();
+                bool hasPageRange = pagesToPrint.Count > 0;
+                
+                if (hasPageRange)
+                {
+                    Console.WriteLine($"[PrintService] 页码范围: {options.PageRange}");
+                    Console.WriteLine($"[PrintService] 要打印的页码: {string.Join(", ", pagesToPrint)}");
+                }
+                else
+                {
+                    Console.WriteLine($"[PrintService] 打印所有页面");
+                }
+                
                 // 5. 设置打印页面事件
                 int currentPage = 0;
+                int pageRangeIndex = 0; // 用于跟踪页码范围列表的索引
+                
                 printDoc.PrintPage += (sender, e) =>
                 {
                     try
                     {
-                        Console.WriteLine($"[PrintService] PrintPage 事件触发 - 第 {currentPage + 1} 页");
+                        // 如果指定了页码范围，只打印指定的页面
+                        if (hasPageRange)
+                        {
+                            // 检查是否还有页面要打印
+                            if (pageRangeIndex >= pagesToPrint.Count)
+                            {
+                                e.HasMorePages = false;
+                                Console.WriteLine($"[PrintService] 页码范围打印完成");
+                                return;
+                            }
+                            
+                            // 获取要打印的页码（从1开始，需要转换为0开始的索引）
+                            currentPage = pagesToPrint[pageRangeIndex] - 1;
+                            pageRangeIndex++;
+                            
+                            Console.WriteLine($"[PrintService] PrintPage 事件触发 - 打印第 {currentPage + 1} 页 (范围中第 {pageRangeIndex} 个)");
+                        }
+                        else
+                        {
+                            Console.WriteLine($"[PrintService] PrintPage 事件触发 - 第 {currentPage + 1} 页");
+                        }
                         
                         if (currentPage < document.PageCount && e.Graphics != null)
                         {
@@ -220,8 +256,18 @@ public class WindowsPrintService : IPrintService
                             
                             Console.WriteLine($"[PrintService] 第 {currentPage + 1} 页渲染完成");
                             
-                            currentPage++;
-                            e.HasMorePages = currentPage < document.PageCount;
+                            // 判断是否还有更多页面
+                            if (hasPageRange)
+                            {
+                                // 使用页码范围
+                                e.HasMorePages = pageRangeIndex < pagesToPrint.Count;
+                            }
+                            else
+                            {
+                                // 打印所有页面
+                                currentPage++;
+                                e.HasMorePages = currentPage < document.PageCount;
+                            }
                             
                             Console.WriteLine($"[PrintService] HasMorePages={e.HasMorePages}");
                         }

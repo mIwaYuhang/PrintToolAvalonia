@@ -1,0 +1,161 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+        x:Class="PrintToolAvalonia.Views.OcrRegionConfigDialog"
+        x:DataType="vm:OcrRegionConfigViewModel"
+        Title="OCR识别区域配置"
+        Width="900" Height="700"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Design.DataContext>
+        <vm:OcrRegionConfigViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- 顶部工具栏 -->
+        <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,15">
+            <Button Grid.Column="0"
+                   Content="加载PDF"
+                   Command="{Binding LoadPdfCommand}"
+                   Classes="accent"
+                   MinWidth="100"/>
+            
+            <StackPanel Grid.Column="1" 
+                       Orientation="Horizontal" 
+                       Spacing="10"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center">
+                <TextBlock Text="当前配置区域:" VerticalAlignment="Center"/>
+                <ComboBox ItemsSource="{Binding RegionTypes}"
+                         SelectedItem="{Binding CurrentRegionType}"
+                         MinWidth="150"/>
+            </StackPanel>
+            
+            <Button Grid.Column="2"
+                   Content="恢复默认"
+                   Command="{Binding ResetCurrentRegionCommand}"
+                   Classes="secondary"
+                   MinWidth="100"/>
+        </Grid>
+
+        <!-- 中间预览区域 -->
+        <Border Grid.Row="1" 
+               BorderBrush="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+               BorderThickness="1"
+               Background="{DynamicResource SystemControlBackgroundAltHighBrush}">
+            <Grid>
+                <!-- PDF预览图像 -->
+                <Image Name="PreviewImage"
+                      Source="{Binding PreviewImage}"
+                      Stretch="Uniform"
+                      HorizontalAlignment="Center"
+                      VerticalAlignment="Center"/>
+                
+                <!-- 选择区域覆盖层 -->
+                <Canvas Name="SelectionCanvas"
+                       Background="Transparent"
+                       PointerPressed="OnCanvasPointerPressed"
+                       PointerMoved="OnCanvasPointerMoved"
+                       PointerReleased="OnCanvasPointerReleased">
+                    
+                    <!-- 快递单号识别区域 -->
+                    <Border Name="TrackingNumberRegionBorder"
+                           BorderBrush="#FF4CAF50"
+                           BorderThickness="2"
+                           Background="#3300FF00"
+                           IsVisible="{Binding IsTrackingNumberRegionVisible}"
+                           IsHitTestVisible="False">
+                        <TextBlock Text="快递单号"
+                                  Foreground="White"
+                                  Background="#FF4CAF50"
+                                  Padding="5,2"
+                                  FontSize="12"
+                                  VerticalAlignment="Top"
+                                  HorizontalAlignment="Left"/>
+                    </Border>
+                    
+                    <!-- 件数识别区域 -->
+                    <Border Name="PackageCountRegionBorder"
+                           BorderBrush="#FF2196F3"
+                           BorderThickness="2"
+                           Background="#330000FF"
+                           IsVisible="{Binding IsPackageCountRegionVisible}"
+                           IsHitTestVisible="False">
+                        <TextBlock Text="件数"
+                                  Foreground="White"
+                                  Background="#FF2196F3"
+                                  Padding="5,2"
+                                  FontSize="12"
+                                  VerticalAlignment="Top"
+                                  HorizontalAlignment="Left"/>
+                    </Border>
+                </Canvas>
+                
+                <!-- 提示文字 -->
+                <TextBlock Text="请先点击'加载PDF'按钮选择一个PDF文件"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"
+                          FontSize="16"
+                          Foreground="{DynamicResource SystemControlForegroundBaseMediumBrush}"
+                          IsVisible="{Binding !HasPreviewImage}"/>
+            </Grid>
+        </Border>
+
+        <!-- 底部信息和按钮 -->
+        <Grid Grid.Row="2" RowDefinitions="Auto,Auto" Margin="0,15,0,0">
+            <!-- 坐标信息 -->
+            <Border Grid.Row="0" 
+                   Classes="card" 
+                   Padding="10"
+                   Margin="0,0,0,10">
+                <Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+                    <!-- 快递单号区域信息 -->
+                    <StackPanel Grid.Column="0" Spacing="5">
+                        <TextBlock Text="快递单号识别区域:" FontWeight="SemiBold" Foreground="#FF4CAF50"/>
+                        <TextBlock>
+                            <Run Text="X: "/><Run Text="{Binding TrackingNumberRegion.X, StringFormat={}{0:F3}}"/>
+                            <Run Text="  Y: "/><Run Text="{Binding TrackingNumberRegion.Y, StringFormat={}{0:F3}}"/>
+                        </TextBlock>
+                        <TextBlock>
+                            <Run Text="宽: "/><Run Text="{Binding TrackingNumberRegion.Width, StringFormat={}{0:F3}}"/>
+                            <Run Text="  高: "/><Run Text="{Binding TrackingNumberRegion.Height, StringFormat={}{0:F3}}"/>
+                        </TextBlock>
+                    </StackPanel>
+                    
+                    <!-- 件数区域信息 -->
+                    <StackPanel Grid.Column="1" Spacing="5">
+                        <TextBlock Text="件数识别区域:" FontWeight="SemiBold" Foreground="#FF2196F3"/>
+                        <TextBlock>
+                            <Run Text="X: "/><Run Text="{Binding PackageCountRegion.X, StringFormat={}{0:F3}}"/>
+                            <Run Text="  Y: "/><Run Text="{Binding PackageCountRegion.Y, StringFormat={}{0:F3}}"/>
+                        </TextBlock>
+                        <TextBlock>
+                            <Run Text="宽: "/><Run Text="{Binding PackageCountRegion.Width, StringFormat={}{0:F3}}"/>
+                            <Run Text="  高: "/><Run Text="{Binding PackageCountRegion.Height, StringFormat={}{0:F3}}"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- 操作按钮 -->
+            <StackPanel Grid.Row="1" 
+                       Orientation="Horizontal" 
+                       HorizontalAlignment="Right"
+                       Spacing="10">
+                <Button Content="取消" 
+                       Command="{Binding CancelCommand}"
+                       Classes="secondary"
+                       MinWidth="100"/>
+                <Button Content="保存" 
+                       Command="{Binding SaveCommand}"
+                       Classes="accent"
+                       MinWidth="100"
+                       IsEnabled="{Binding HasPreviewImage}"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

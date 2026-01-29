@@ -394,6 +394,12 @@
                                            IsEnabled="{Binding !IsPrinting}"
                                            MinWidth="100"/>
                                     
+                                    <Button Content="单打" 
+                                           Command="{Binding SinglePagePrintCommand}"
+                                           Classes="secondary"
+                                           IsEnabled="{Binding !IsPrinting}"
+                                           MinWidth="100"/>
+                                    
                                     <Button Content="开始打印" 
                                            Command="{Binding PrintCommand}"
                                            Classes="accent"

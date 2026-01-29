@@ -29,4 +29,26 @@ public class AppConfig
     /// 上次使用的平台
     /// </summary>
     public Platform LastPlatform { get; set; } = Platform.TEMU;
+    
+    /// <summary>
+    /// 快递单号OCR识别区域（相对坐标）
+    /// </summary>
+    public OcrRegion TrackingNumberRegion { get; set; } = new()
+    {
+        X = 0.05f,
+        Y = 0.85f,
+        Width = 0.5f,
+        Height = 0.08f
+    };
+    
+    /// <summary>
+    /// 件数OCR识别区域（相对坐标）
+    /// </summary>
+    public OcrRegion PackageCountRegion { get; set; } = new()
+    {
+        X = 0.7f,
+        Y = 0.45f,
+        Width = 0.25f,
+        Height = 0.15f
+    };
 }

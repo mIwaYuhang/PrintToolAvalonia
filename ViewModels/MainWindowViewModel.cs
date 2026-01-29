@@ -179,6 +179,7 @@ public partial class MainWindowViewModel : ViewModelBase
     public ICommand RemoveFileCommand { get; }
     public ICommand ClearAllCommand { get; }
     public ICommand PrintCommand { get; }
+    public ICommand SinglePagePrintCommand { get; }
     public ICommand OpenSettingsCommand { get; }
     public ICommand OpenHistoryCommand { get; }
     public ICommand PreviewEcoCodeCommand { get; }
@@ -206,6 +207,7 @@ public partial class MainWindowViewModel : ViewModelBase
         RemoveFileCommand = new RelayCommand<ImportedFile>(RemoveFile);
         ClearAllCommand = new RelayCommand<string>(ClearAll);
         PrintCommand = new AsyncRelayCommand(PrintAsync);
+        SinglePagePrintCommand = new AsyncRelayCommand(SinglePagePrintAsync);
         OpenSettingsCommand = new RelayCommand(OpenSettings);
         OpenHistoryCommand = new RelayCommand(OpenHistory);
         PreviewEcoCodeCommand = new AsyncRelayCommand<EcoCodeItem>(PreviewEcoCodeAsync);
@@ -707,6 +709,81 @@ public partial class MainWindowViewModel : ViewModelBase
             return desktop.MainWindow;
         }
         return null;
+    }
+
+    /// <summary>
+    /// 单页打印
+    /// </summary>
+    private async Task SinglePagePrintAsync()
+    {
+        // 验证是否有主单文件
+        if (MainOrderFiles.Count == 0)
+        {
+            await ShowErrorAsync("请先添加主单文件");
+            return;
+        }
+
+        try
+        {
+            // 获取第一个主单文件
+            var firstFile = MainOrderFiles[0];
+
+            // 获取所需的服务
+            var pdfRenderService = App.Services?.GetRequiredService<IPdfRenderService>();
+            var ocrService = App.Services?.GetRequiredService<IOcrService>();
+            var configService = App.Services?.GetRequiredService<IConfigService>();
+
+            if (pdfRenderService == null || ocrService == null || configService == null)
+            {
+                await ShowErrorAsync("服务初始化失败");
+                return;
+            }
+
+            // 获取图像匹配服务和条码分组服务
+            var imageMatchService = App.Services?.GetService<IImageMatchService>();
+            var barcodeGroupService = App.Services?.GetService<IBarcodeGroupService>();
+
+            if (imageMatchService == null || barcodeGroupService == null)
+            {
+                await ShowErrorAsync("条码分组服务初始化失败");
+                return;
+            }
+
+            // 创建单页打印对话框
+            var dialog = new SinglePagePrintDialog();
+            var viewModel = new SinglePagePrintViewModel(
+                pdfRenderService,
+                ocrService,
+                _printService,
+                _databaseService,
+                configService,
+                imageMatchService,
+                barcodeGroupService
+            );
+
+            // 获取条码PDF路径（如果有的话）
+            string? barcodePdfPath = null;
+            if (BarcodeFiles.Count > 0)
+            {
+                barcodePdfPath = BarcodeFiles[0].Path;
+            }
+
+            // 初始化ViewModel（传入环保码列表和条码PDF路径）
+            await viewModel.InitializeAsync(firstFile.Path, EcoCodes, barcodePdfPath);
+
+            // 设置OwnerWindow
+            viewModel.OwnerWindow = dialog;
+
+            // 设置DataContext
+            dialog.DataContext = viewModel;
+
+            // 显示对话框
+            await dialog.ShowDialog(GetMainWindow());
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync($"打开单页打印失败: {ex.Message}");
+        }
     }
 
     /// <summary>

@@ -1,0 +1,202 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="700"
+        x:Class="PrintToolAvalonia.Views.SinglePagePrintDialog"
+        x:DataType="vm:SinglePagePrintViewModel"
+        Title="单页打印"
+        Width="900" Height="700"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Design.DataContext>
+        <vm:SinglePagePrintViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="20">
+        <!-- 顶部信息栏 -->
+        <Border Grid.Row="0" 
+                Classes="card" 
+                Padding="15"
+                Margin="0,0,0,15">
+            <Grid ColumnDefinitions="*,Auto">
+                <StackPanel Grid.Column="0" Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="快递单号:" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding TrackingNumber}"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <TextBlock Text="件数:" FontWeight="SemiBold"/>
+                        <TextBlock Text="{Binding PackageCount}"/>
+                    </StackPanel>
+                </StackPanel>
+                <TextBlock Grid.Column="1" 
+                          VerticalAlignment="Center"
+                          FontSize="16"
+                          FontWeight="SemiBold">
+                    <Run Text="第 "/>
+                    <Run Text="{Binding CurrentPage}"/>
+                    <Run Text=" 页 / 共 "/>
+                    <Run Text="{Binding TotalPages}"/>
+                    <Run Text=" 页"/>
+                </TextBlock>
+            </Grid>
+        </Border>
+
+        <!-- PDF预览区域 -->
+        <Border Grid.Row="1" 
+                Classes="card" 
+                Padding="10"
+                Margin="0,0,0,15">
+            <Grid>
+                <!-- PDF图像 -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                             VerticalScrollBarVisibility="Auto">
+                    <Image Source="{Binding CurrentPageImage}"
+                          Stretch="Uniform"
+                          IsVisible="{Binding !IsLoading}"/>
+                </ScrollViewer>
+                
+                <!-- 加载指示器 -->
+                <Border Background="#80000000"
+                       IsVisible="{Binding IsLoading}">
+                    <StackPanel HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Spacing="10">
+                        <TextBlock Text="加载中..." 
+                                  Foreground="White"
+                                  FontSize="16"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- 打印选项区域 -->
+        <Border Grid.Row="2" 
+                Classes="card" 
+                Padding="15"
+                Margin="0,0,0,15">
+            <StackPanel Spacing="15">
+                <!-- 环保码选择行 -->
+                <Grid ColumnDefinitions="Auto,200,Auto,100,Auto" ColumnSpacing="10">
+                    <TextBlock Grid.Column="0" 
+                              Text="环保码：" 
+                              VerticalAlignment="Center"/>
+                    <ComboBox Grid.Column="1"
+                             ItemsSource="{Binding EcoCodes}"
+                             SelectedItem="{Binding SelectedEcoCode}"
+                             PlaceholderText="选择环保码">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Name}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+                    <TextBlock Grid.Column="2" 
+                              Text="数量：" 
+                              VerticalAlignment="Center"/>
+                    <NumericUpDown Grid.Column="3"
+                                  Value="{Binding EcoCodeQuantity}"
+                                  Minimum="0"
+                                  Maximum="999"
+                                  Increment="1"
+                                  FormatString="0"/>
+                    <TextBlock Grid.Column="4" 
+                              Text="张" 
+                              VerticalAlignment="Center"/>
+                </Grid>
+
+                <!-- 英代欧代条码行 -->
+                <Grid ColumnDefinitions="Auto,Auto,100,Auto,Auto" ColumnSpacing="10">
+                    <CheckBox Grid.Column="0"
+                             IsChecked="{Binding UkEuBarcodeEnabled}"
+                             Content="英代欧代条码"
+                             VerticalAlignment="Center"/>
+                    <TextBlock Grid.Column="1" 
+                              Text="（内置条码）" 
+                              VerticalAlignment="Center"
+                              Classes="secondary"/>
+                    <NumericUpDown Grid.Column="2"
+                                  Value="{Binding UkEuBarcodeQuantity}"
+                                  Minimum="0"
+                                  Maximum="999"
+                                  Increment="1"
+                                  FormatString="0"
+                                  IsEnabled="{Binding UkEuBarcodeEnabled}"/>
+                    <TextBlock Grid.Column="3" 
+                              Text="张" 
+                              VerticalAlignment="Center"/>
+                    <Button Grid.Column="4"
+                           Content="选择条码"
+                           Command="{Binding SelectBarcodeGroupCommand}"
+                           MinWidth="100"
+                           Classes="secondary"/>
+                </Grid>
+                
+                <!-- 选中的分组信息 -->
+                <Border IsVisible="{Binding SelectedBarcodeGroup, Converter={x:Static ObjectConverters.IsNotNull}}"
+                       Background="#E3F2FD"
+                       Padding="10"
+                       CornerRadius="4"
+                       BorderBrush="#2196F3"
+                       BorderThickness="1">
+                    <StackPanel Spacing="5">
+                        <TextBlock FontWeight="SemiBold" 
+                                  Foreground="#1976D2">
+                            <Run Text="已选择条码分组："/>
+                        </TextBlock>
+                        <StackPanel Orientation="Horizontal" Spacing="15">
+                            <TextBlock>
+                                <Run Text="页码范围：第 "/>
+                                <Run Text="{Binding SelectedBarcodeGroup.StartPage}"/>
+                                <Run Text="-"/>
+                                <Run Text="{Binding SelectedBarcodeGroup.EndPage}"/>
+                                <Run Text=" 页"/>
+                            </TextBlock>
+                            <TextBlock>
+                                <Run Text="条码数量："/>
+                                <Run Text="{Binding SelectedBarcodeGroup.BarcodeCount}"/>
+                                <Run Text=" 个"/>
+                            </TextBlock>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </Border>
+
+        <!-- 底部操作栏 -->
+        <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto">
+            <Button Grid.Column="0"
+                   Content="上一页"
+                   Command="{Binding PreviousPageCommand}"
+                   Classes="secondary"
+                   MinWidth="100"/>
+            
+            <Button Grid.Column="1"
+                   Content="打印当前页"
+                   Command="{Binding PrintCurrentPageCommand}"
+                   Classes="accent"
+                   HorizontalAlignment="Center"
+                   MinWidth="150"
+                   IsEnabled="{Binding !IsPrinting}">
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal" Spacing="5">
+                        <TextBlock Text="打印当前页" 
+                                  IsVisible="{Binding !IsPrinting}"/>
+                        <TextBlock Text="打印中..." 
+                                  IsVisible="{Binding IsPrinting}"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+            
+            <Button Grid.Column="2"
+                   Content="下一页"
+                   Command="{Binding NextPageCommand}"
+                   Classes="secondary"
+                   MinWidth="100"/>
+        </Grid>
+    </Grid>
+</Window>

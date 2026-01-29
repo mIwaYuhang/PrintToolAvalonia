@@ -1,0 +1,136 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        x:Class="PrintToolAvalonia.Views.LabelSelectionDialog"
+        x:DataType="vm:LabelSelectionViewModel"
+        Title="选择条码标签"
+        Width="900"
+        Height="700"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Grid RowDefinitions="*,Auto">
+        <!-- 分组列表 -->
+        <ScrollViewer Grid.Row="0" Padding="10">
+            <ItemsControl ItemsSource="{Binding BarcodeGroups}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Button Margin="10" 
+                                Padding="5" 
+                                BorderBrush="Gray" 
+                                BorderThickness="2"
+                                CornerRadius="4"
+                                Background="Transparent"
+                                Command="{Binding SelectCommand}">
+                            <Button.Styles>
+                                <Style Selector="Button">
+                                    <Setter Property="Background" Value="Transparent" />
+                                </Style>
+                                <Style Selector="Button:pointerover /template/ ContentPresenter">
+                                    <Setter Property="Background" Value="#F5F5F5" />
+                                </Style>
+                            </Button.Styles>
+                            
+                            <Grid RowDefinitions="Auto,Auto">
+                                <!-- 预览图 -->
+                                <Border Grid.Row="0" 
+                                        Width="220" 
+                                        Height="300"
+                                        Background="White"
+                                        BorderBrush="#E0E0E0"
+                                        BorderThickness="1">
+                                    <Grid>
+                                        <!-- 条码预览图像 -->
+                                        <Image Source="{Binding PreviewImage}" 
+                                               Stretch="Uniform"
+                                               HorizontalAlignment="Center"
+                                               VerticalAlignment="Center"/>
+                                        
+                                        <!-- 左上角：条码数量 -->
+                                        <Border HorizontalAlignment="Left" 
+                                                VerticalAlignment="Top"
+                                                Background="#CC000000" 
+                                                Padding="10,5" 
+                                                Margin="5"
+                                                CornerRadius="3">
+                                            <TextBlock Text="{Binding BarcodeCountText}" 
+                                                      Foreground="White" 
+                                                      FontSize="16" 
+                                                      FontWeight="Bold"/>
+                                        </Border>
+                                        
+                                        <!-- 右上角：已打印标记 -->
+                                        <Border HorizontalAlignment="Right" 
+                                                VerticalAlignment="Top"
+                                                Background="#CCFF6B6B" 
+                                                Padding="10,5" 
+                                                Margin="5"
+                                                CornerRadius="3"
+                                                IsVisible="{Binding IsPrinted}">
+                                            <TextBlock Text="已打印" 
+                                                      Foreground="White" 
+                                                      FontSize="14" 
+                                                      FontWeight="Bold"/>
+                                        </Border>
+                                        
+                                        <!-- 选中指示器 -->
+                                        <Border HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Background="#802196F3"
+                                                Width="220"
+                                                Height="300"
+                                                IsVisible="{Binding IsSelected}">
+                                            <TextBlock Text="✓" 
+                                                      FontSize="80" 
+                                                      Foreground="White"
+                                                      FontWeight="Bold"
+                                                      HorizontalAlignment="Center"
+                                                      VerticalAlignment="Center"/>
+                                        </Border>
+                                    </Grid>
+                                </Border>
+                                
+                                <!-- 分组信息 -->
+                                <TextBlock Grid.Row="1" 
+                                          Text="{Binding GroupInfo}" 
+                                          HorizontalAlignment="Center" 
+                                          Margin="0,8,0,0"
+                                          FontSize="14"
+                                          Foreground="#666666"/>
+                            </Grid>
+                        </Button>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+        
+        <!-- 底部按钮 -->
+        <Border Grid.Row="1" 
+                Background="#F5F5F5" 
+                BorderBrush="#E0E0E0" 
+                BorderThickness="0,1,0,0"
+                Padding="15">
+            <StackPanel Orientation="Horizontal" 
+                       HorizontalAlignment="Right" 
+                       Spacing="10">
+                <Button Content="确定" 
+                        Command="{Binding ConfirmCommand}" 
+                        Width="100"
+                        Height="36"
+                        FontSize="14"
+                        Classes="accent"/>
+                <Button Content="取消" 
+                        Command="{Binding CancelCommand}" 
+                        Width="100"
+                        Height="36"
+                        FontSize="14"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>
