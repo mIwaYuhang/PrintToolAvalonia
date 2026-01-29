@@ -1,0 +1,214 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="600" d:DesignHeight="700"
+        x:Class="PrintToolAvalonia.Views.SettingsDialog"
+        x:DataType="vm:SettingsViewModel"
+        Title="打印机设置"
+        Width="600" Height="700"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Design.DataContext>
+        <vm:SettingsViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*,Auto" Margin="20">
+        <!-- 标题和刷新按钮 -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,20">
+            <TextBlock Grid.Column="0" 
+                      Text="打印机配置" 
+                      Classes="title"
+                      VerticalAlignment="Center"/>
+            <Button Grid.Column="1" 
+                   Content="刷新打印机" 
+                   Command="{Binding RefreshPrintersCommand}"
+                   Classes="secondary"/>
+        </Grid>
+
+        <!-- 配置区域 -->
+        <ScrollViewer Grid.Row="1">
+            <StackPanel Spacing="20">
+                <!-- 主单打印机配置 -->
+                <Border Classes="card">
+                    <StackPanel Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                      Text="主单打印机" 
+                                      Classes="section-title"
+                                      VerticalAlignment="Center"/>
+                            <Button Grid.Column="1"
+                                   Content="测试打印"
+                                   Command="{Binding TestPrintCommand}"
+                                   CommandParameter="{x:Static vm:PrinterType.MainOrder}"
+                                   Classes="secondary"
+                                   IsEnabled="{Binding !IsTestingMainOrder}"
+                                   MinWidth="90">
+                                <Button.Content>
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="测试打印" 
+                                                  IsVisible="{Binding !IsTestingMainOrder}"/>
+                                        <TextBlock Text="测试中..." 
+                                                  IsVisible="{Binding IsTestingMainOrder}"/>
+                                    </StackPanel>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                        
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="打印机:"/>
+                            <ComboBox ItemsSource="{Binding AvailablePrinters}"
+                                     SelectedItem="{Binding MainOrderPrinter.PrinterName}"
+                                     PlaceholderText="选择打印机"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel Grid.Column="0" Spacing="10">
+                                <TextBlock Text="纸张宽度 (mm):"/>
+                                <TextBox Text="{Binding MainOrderPrinter.PaperWidthMm}"
+                                        Watermark="例如: 100"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Spacing="10">
+                                <TextBlock Text="纸张高度 (mm):"/>
+                                <TextBox Text="{Binding MainOrderPrinter.PaperHeightMm}"
+                                        Watermark="例如: 150"/>
+                            </StackPanel>
+                        </Grid>
+                        
+                        <TextBlock Text="提示：点击'测试打印'将打开文件选择对话框，选择一个 PDF 文件进行测试打印"
+                                  FontSize="11"
+                                  Classes="secondary"
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 条码打印机配置 -->
+                <Border Classes="card">
+                    <StackPanel Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                      Text="条码打印机" 
+                                      Classes="section-title"
+                                      VerticalAlignment="Center"/>
+                            <Button Grid.Column="1"
+                                   Content="测试打印"
+                                   Command="{Binding TestPrintCommand}"
+                                   CommandParameter="{x:Static vm:PrinterType.Barcode}"
+                                   Classes="secondary"
+                                   IsEnabled="{Binding !IsTestingBarcode}"
+                                   MinWidth="90">
+                                <Button.Content>
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="测试打印" 
+                                                  IsVisible="{Binding !IsTestingBarcode}"/>
+                                        <TextBlock Text="测试中..." 
+                                                  IsVisible="{Binding IsTestingBarcode}"/>
+                                    </StackPanel>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                        
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="打印机:"/>
+                            <ComboBox ItemsSource="{Binding AvailablePrinters}"
+                                     SelectedItem="{Binding BarcodePrinter.PrinterName}"
+                                     PlaceholderText="选择打印机"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel Grid.Column="0" Spacing="10">
+                                <TextBlock Text="纸张宽度 (mm):"/>
+                                <TextBox Text="{Binding BarcodePrinter.PaperWidthMm}"
+                                        Watermark="例如: 100"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Spacing="10">
+                                <TextBlock Text="纸张高度 (mm):"/>
+                                <TextBox Text="{Binding BarcodePrinter.PaperHeightMm}"
+                                        Watermark="例如: 150"/>
+                            </StackPanel>
+                        </Grid>
+                        
+                        <TextBlock Text="提示：点击'测试打印'将打开文件选择对话框，选择一个 PDF 文件进行测试打印"
+                                  FontSize="11"
+                                  Classes="secondary"
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- 环保码打印机配置 -->
+                <Border Classes="card">
+                    <StackPanel Spacing="15">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                      Text="环保码打印机" 
+                                      Classes="section-title"
+                                      VerticalAlignment="Center"/>
+                            <Button Grid.Column="1"
+                                   Content="测试打印"
+                                   Command="{Binding TestPrintCommand}"
+                                   CommandParameter="{x:Static vm:PrinterType.EcoCode}"
+                                   Classes="secondary"
+                                   IsEnabled="{Binding !IsTestingEcoCode}"
+                                   MinWidth="90">
+                                <Button.Content>
+                                    <StackPanel Orientation="Horizontal" Spacing="5">
+                                        <TextBlock Text="测试打印" 
+                                                  IsVisible="{Binding !IsTestingEcoCode}"/>
+                                        <TextBlock Text="测试中..." 
+                                                  IsVisible="{Binding IsTestingEcoCode}"/>
+                                    </StackPanel>
+                                </Button.Content>
+                            </Button>
+                        </Grid>
+                        
+                        <StackPanel Spacing="10">
+                            <TextBlock Text="打印机:"/>
+                            <ComboBox ItemsSource="{Binding AvailablePrinters}"
+                                     SelectedItem="{Binding EcoCodePrinter.PrinterName}"
+                                     PlaceholderText="选择打印机"/>
+                        </StackPanel>
+
+                        <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                            <StackPanel Grid.Column="0" Spacing="10">
+                                <TextBlock Text="纸张宽度 (mm):"/>
+                                <TextBox Text="{Binding EcoCodePrinter.PaperWidthMm}"
+                                        Watermark="例如: 100"/>
+                            </StackPanel>
+                            
+                            <StackPanel Grid.Column="1" Spacing="10">
+                                <TextBlock Text="纸张高度 (mm):"/>
+                                <TextBox Text="{Binding EcoCodePrinter.PaperHeightMm}"
+                                        Watermark="例如: 150"/>
+                            </StackPanel>
+                        </Grid>
+                        
+                        <TextBlock Text="提示：点击'测试打印'将使用第一个可用的环保码文件进行测试打印"
+                                  FontSize="11"
+                                  Classes="secondary"
+                                  TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="2" 
+                   Orientation="Horizontal" 
+                   HorizontalAlignment="Right"
+                   Spacing="10"
+                   Margin="0,20,0,0">
+            <Button Content="取消" 
+                   Command="{Binding CancelCommand}"
+                   Classes="secondary"
+                   MinWidth="100"/>
+            <Button Content="保存" 
+                   Command="{Binding SaveCommand}"
+                   Classes="accent"
+                   MinWidth="100"/>
+        </StackPanel>
+    </Grid>
+</Window>

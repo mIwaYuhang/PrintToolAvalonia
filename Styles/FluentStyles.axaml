@@ -1,0 +1,254 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    
+    <!-- 颜色定义 -->
+    <Style>
+        <Style.Resources>
+            <!-- 主题色 -->
+            <SolidColorBrush x:Key="AccentColor">#0078D4</SolidColorBrush>
+            <SolidColorBrush x:Key="AccentColorLight">#1890FF</SolidColorBrush>
+            <SolidColorBrush x:Key="AccentColorDark">#005A9E</SolidColorBrush>
+            
+            <!-- 背景色 -->
+            <SolidColorBrush x:Key="CardBackground">#FFFFFF</SolidColorBrush>
+            <SolidColorBrush x:Key="CardBackgroundHover">#F5F5F5</SolidColorBrush>
+            <SolidColorBrush x:Key="DropZoneBackground">#FAFAFA</SolidColorBrush>
+            
+            <!-- 边框色 -->
+            <SolidColorBrush x:Key="BorderColor">#E0E0E0</SolidColorBrush>
+            <SolidColorBrush x:Key="BorderColorHover">#BDBDBD</SolidColorBrush>
+            
+            <!-- 文本色 -->
+            <SolidColorBrush x:Key="TextPrimary">#212121</SolidColorBrush>
+            <SolidColorBrush x:Key="TextSecondary">#757575</SolidColorBrush>
+            <SolidColorBrush x:Key="TextDisabled">#BDBDBD</SolidColorBrush>
+        </Style.Resources>
+    </Style>
+
+    <!-- 卡片样式 -->
+    <Style Selector="Border.card">
+        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="BoxShadow" Value="0 2 8 0 #20000000"/>
+        <Setter Property="Padding" Value="16"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    </Style>
+
+    <!-- 卡片悬停效果 -->
+    <Style Selector="Border.card:pointerover">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundHover}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColorHover}"/>
+    </Style>
+
+    <!-- 拖放区域样式 -->
+    <Style Selector="Border.drop-zone">
+        <Setter Property="Background" Value="{DynamicResource DropZoneBackground}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="MinHeight" Value="200"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.2"/>
+                <ThicknessTransition Property="BorderThickness" Duration="0:0:0.2"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <!-- 拖放区域悬停效果（鼠标悬停） -->
+    <Style Selector="Border.drop-zone:pointerover">
+        <Setter Property="Background" Value="#E3F2FD"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentColorLight}"/>
+    </Style>
+
+    <!-- 拖放区域拖拽悬停效果（拖拽文件悬停） -->
+    <Style Selector="Border.drop-zone-hover">
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+                    <GradientStop Color="#E3F2FD" Offset="0"/>
+                    <GradientStop Color="#BBDEFB" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentColorLight}"/>
+        <Setter Property="BorderThickness" Value="3"/>
+        <Setter Property="BoxShadow" Value="0 4 16 0 #40409EFF"/>
+        <Setter Property="Transitions">
+            <Transitions>
+                <BrushTransition Property="Background" Duration="0:0:0.2"/>
+                <BrushTransition Property="BorderBrush" Duration="0:0:0.2"/>
+                <ThicknessTransition Property="BorderThickness" Duration="0:0:0.2"/>
+                <BoxShadowsTransition Property="BoxShadow" Duration="0:0:0.2"/>
+            </Transitions>
+        </Setter>
+    </Style>
+
+    <!-- 强调按钮样式 -->
+    <Style Selector="Button.accent">
+        <Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="20,10"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- 强调按钮悬停效果 -->
+    <Style Selector="Button.accent:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentColorLight}"/>
+    </Style>
+
+    <!-- 强调按钮按下效果 -->
+    <Style Selector="Button.accent:pressed /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentColorDark}"/>
+    </Style>
+
+    <!-- 次要按钮样式 -->
+    <Style Selector="Button.secondary">
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+    </Style>
+
+    <!-- 次要按钮悬停效果 -->
+    <Style Selector="Button.secondary:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="TextBlock.Foreground" Value="White"/>
+    </Style>
+
+    <!-- 危险按钮样式 -->
+    <Style Selector="Button.danger">
+        <Setter Property="Background" Value="#F44336"/>
+        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- 危险按钮悬停效果 -->
+    <Style Selector="Button.danger:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="#D32F2F"/>
+    </Style>
+
+    <!-- 工具栏样式 -->
+    <Style Selector="Border.toolbar">
+        <Setter Property="Background" Value="{DynamicResource CardBackground}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+        <Setter Property="Padding" Value="16,12"/>
+        <Setter Property="BoxShadow" Value="0 1 4 0 #10000000"/>
+    </Style>
+
+    <!-- 标题文本样式 -->
+    <Style Selector="TextBlock.title">
+        <Setter Property="FontSize" Value="20"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+    </Style>
+
+    <!-- 章节标题样式 -->
+    <Style Selector="TextBlock.section-title">
+        <Setter Property="FontSize" Value="16"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextPrimary}"/>
+        <Setter Property="Margin" Value="0,0,0,8"/>
+    </Style>
+
+    <!-- 次要文本样式 -->
+    <Style Selector="TextBlock.secondary">
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondary}"/>
+    </Style>
+
+    <!-- 列表项样式 -->
+    <Style Selector="ListBoxItem">
+        <Setter Property="Padding" Value="12"/>
+        <Setter Property="Margin" Value="4"/>
+        <Setter Property="CornerRadius" Value="4"/>
+    </Style>
+
+    <!-- 列表项悬停效果 -->
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource CardBackgroundHover}"/>
+    </Style>
+
+    <!-- 列表项选中效果 -->
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+        <Setter Property="Background" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="TextBlock.Foreground" Value="White"/>
+    </Style>
+
+    <!-- 输入框样式 -->
+    <Style Selector="TextBox">
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    </Style>
+
+    <!-- 输入框聚焦效果 -->
+    <Style Selector="TextBox:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
+    <!-- 下拉框样式 -->
+    <Style Selector="ComboBox">
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    </Style>
+
+    <!-- 进度条样式 -->
+    <Style Selector="ProgressBar">
+        <Setter Property="Height" Value="8"/>
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+    </Style>
+
+    <!-- 标签页样式 -->
+    <Style Selector="TabItem">
+        <Setter Property="FontSize" Value="14"/>
+        <Setter Property="Padding" Value="16,8"/>
+    </Style>
+
+    <!-- 标签页选中效果 -->
+    <Style Selector="TabItem:selected">
+        <Setter Property="Foreground" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    
+    <!-- 选项面板样式 -->
+    <Style Selector="Border.options-panel">
+        <Setter Property="Background" Value="#F5F7FA"/>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    </Style>
+    
+    <!-- 统计面板样式 -->
+    <Style Selector="Border.summary-panel">
+        <Setter Property="Background">
+            <Setter.Value>
+                <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Color="#E3F2FD" Offset="0"/>
+                    <GradientStop Color="#F3E5F5" Offset="1"/>
+                </LinearGradientBrush>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="CornerRadius" Value="8"/>
+        <Setter Property="Padding" Value="20"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+    </Style>
+
+</Styles>

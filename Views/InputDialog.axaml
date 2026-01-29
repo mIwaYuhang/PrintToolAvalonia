@@ -1,0 +1,39 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+        x:Class="PrintToolAvalonia.Views.InputDialog"
+        Title="输入"
+        Width="400" Height="200"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Grid RowDefinitions="*,Auto" Margin="20">
+        <!-- 输入区域 -->
+        <StackPanel Grid.Row="0" Spacing="15" VerticalAlignment="Center">
+            <TextBlock Name="MessageTextBlock"
+                      TextWrapping="Wrap"
+                      FontSize="14"/>
+            
+            <TextBox Name="InputTextBox"
+                    FontSize="14"/>
+        </StackPanel>
+
+        <!-- 按钮区域 -->
+        <StackPanel Grid.Row="1" 
+                   Orientation="Horizontal" 
+                   HorizontalAlignment="Right"
+                   Spacing="10"
+                   Margin="0,20,0,0">
+            <Button Content="取消" 
+                   Click="OnCancelClick"
+                   Classes="secondary"
+                   MinWidth="80"/>
+            <Button Content="确定" 
+                   Click="OnOkClick"
+                   Classes="accent"
+                   MinWidth="80"/>
+        </StackPanel>
+    </Grid>
+</Window>

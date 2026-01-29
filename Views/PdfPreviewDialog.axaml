@@ -1,0 +1,85 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+        x:Class="PrintToolAvalonia.Views.PdfPreviewDialog"
+        x:DataType="vm:PdfPreviewViewModel"
+        Title="PDF 预览"
+        Width="800" Height="600"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Grid RowDefinitions="Auto,*,Auto">
+        <!-- 顶部工具栏 -->
+        <Border Grid.Row="0" Classes="toolbar">
+            <Grid ColumnDefinitions="*,Auto,Auto,Auto">
+                <TextBlock Grid.Column="0" 
+                          Text="{Binding FileName}" 
+                          Classes="section-title"
+                          VerticalAlignment="Center"/>
+                
+                <Button Grid.Column="1"
+                       Content="上一页"
+                       Command="{Binding PreviousPageCommand}"
+                       IsEnabled="{Binding CanGoPrevious}"
+                       Classes="secondary"
+                       Margin="0,0,10,0"/>
+                
+                <TextBlock Grid.Column="2"
+                          VerticalAlignment="Center"
+                          Margin="0,0,10,0">
+                    <TextBlock.Text>
+                        <MultiBinding StringFormat="{}{0} / {1}">
+                            <Binding Path="CurrentPage"/>
+                            <Binding Path="TotalPages"/>
+                        </MultiBinding>
+                    </TextBlock.Text>
+                </TextBlock>
+                
+                <Button Grid.Column="3"
+                       Content="下一页"
+                       Command="{Binding NextPageCommand}"
+                       IsEnabled="{Binding CanGoNext}"
+                       Classes="secondary"/>
+            </Grid>
+        </Border>
+
+        <!-- 预览区域 -->
+        <Border Grid.Row="1" 
+               Background="#F5F5F5"
+               Padding="20">
+            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                         VerticalScrollBarVisibility="Auto">
+                <Border Background="White"
+                       BoxShadow="0 2 8 0 #20000000"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center">
+                    <!-- PDF 渲染区域 -->
+                    <TextBlock Text="PDF 预览功能需要集成 PDF 渲染库"
+                              FontSize="16"
+                              Foreground="#757575"
+                              Padding="40"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"/>
+                    
+                    <!-- TODO: 集成 PdfiumViewer 或其他 PDF 渲染控件 -->
+                    <!-- <Image Source="{Binding CurrentPageImage}" 
+                           Stretch="Uniform"/> -->
+                </Border>
+            </ScrollViewer>
+        </Border>
+
+        <!-- 底部按钮 -->
+        <Border Grid.Row="2" 
+               Classes="toolbar"
+               Padding="20,10">
+            <Button Content="关闭" 
+                   Command="{Binding CloseCommand}"
+                   Classes="secondary"
+                   HorizontalAlignment="Right"
+                   MinWidth="100"/>
+        </Border>
+    </Grid>
+</Window>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<linker>
+  <!-- 保留所有模型类 -->
+  <assembly fullname="电商打单工具">
+    <type fullname="PrintToolAvalonia.Models.*" preserve="all" />
+    <type fullname="PrintToolAvalonia.Services.*" preserve="all" />
+  </assembly>
+  
+  <!-- 保留JSON序列化相关类型 -->
+  <assembly fullname="System.Text.Json">
+    <type fullname="System.Text.Json.JsonSerializer" preserve="all" />
+    <type fullname="System.Text.Json.JsonSerializerOptions" preserve="all" />
+  </assembly>
+  
+  <!-- 保留LiteDB相关类型 -->
+  <assembly fullname="LiteDB">
+    <type fullname="LiteDB.*" preserve="all" />
+  </assembly>
+</linker>

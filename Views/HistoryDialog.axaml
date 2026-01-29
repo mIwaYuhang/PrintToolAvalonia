@@ -1,0 +1,95 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        x:Class="PrintToolAvalonia.Views.HistoryDialog"
+        x:DataType="vm:HistoryViewModel"
+        Title="打印历史"
+        Width="900" Height="600"
+        WindowStartupLocation="CenterOwner">
+
+    <Design.DataContext>
+        <vm:HistoryViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20">
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" 
+                  Text="打印历史记录" 
+                  Classes="title"
+                  Margin="0,0,0,20"/>
+
+        <!-- 日期过滤器 -->
+        <Border Grid.Row="1" Classes="card" Margin="0,0,0,10">
+            <Grid ColumnDefinitions="Auto,*,Auto,*,Auto" ColumnSpacing="10">
+                <TextBlock Grid.Column="0" 
+                          Text="开始日期:" 
+                          VerticalAlignment="Center"/>
+                <DatePicker Grid.Column="1" 
+                           SelectedDate="{Binding StartDate}"/>
+                
+                <TextBlock Grid.Column="2" 
+                          Text="结束日期:" 
+                          VerticalAlignment="Center"/>
+                <DatePicker Grid.Column="3" 
+                           SelectedDate="{Binding EndDate}"/>
+                
+                <Button Grid.Column="4" 
+                       Content="过滤" 
+                       Command="{Binding FilterCommand}"
+                       Classes="secondary"/>
+            </Grid>
+        </Border>
+
+        <!-- 历史记录列表 -->
+        <Border Grid.Row="2" Classes="card">
+            <DataGrid ItemsSource="{Binding Records}"
+                     AutoGenerateColumns="False"
+                     IsReadOnly="True"
+                     GridLinesVisibility="Horizontal"
+                     HeadersVisibility="Column">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="时间" 
+                                       Binding="{Binding Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
+                                       Width="150"/>
+                    <DataGridTextColumn Header="平台" 
+                                       Binding="{Binding Platform}"
+                                       Width="80"/>
+                    <DataGridTextColumn Header="主单数量" 
+                                       Binding="{Binding MainOrderCount}"
+                                       Width="100"/>
+                    <DataGridTextColumn Header="条码数量" 
+                                       Binding="{Binding BarcodeCount}"
+                                       Width="100"/>
+                    <DataGridTextColumn Header="环保码数量" 
+                                       Binding="{Binding EcoCodeCount}"
+                                       Width="100"/>
+                    <DataGridTextColumn Header="环保码名称" 
+                                       Binding="{Binding EcoCodeName}"
+                                       Width="*"/>
+                    <DataGridTextColumn Header="状态" 
+                                       Binding="{Binding Status}"
+                                       Width="80"/>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- 底部按钮 -->
+        <StackPanel Grid.Row="3" 
+                   Orientation="Horizontal" 
+                   HorizontalAlignment="Right"
+                   Spacing="10"
+                   Margin="0,20,0,0">
+            <Button Content="清空历史" 
+                   Command="{Binding ClearAllCommand}"
+                   Classes="danger"
+                   MinWidth="100"/>
+            <Button Content="关闭" 
+                   Command="{Binding CloseCommand}"
+                   Classes="secondary"
+                   MinWidth="100"/>
+        </StackPanel>
+    </Grid>
+</Window>

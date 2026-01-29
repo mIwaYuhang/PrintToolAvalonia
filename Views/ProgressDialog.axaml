@@ -1,0 +1,41 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+        x:Class="PrintToolAvalonia.Views.ProgressDialog"
+        Title="打印中..."
+        Width="400" Height="200"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False"
+        ShowInTaskbar="False">
+
+    <Border Classes="card" Margin="20">
+        <StackPanel Spacing="20" VerticalAlignment="Center">
+            <!-- 标题 -->
+            <TextBlock Text="正在打印，请稍候..." 
+                      Classes="section-title"
+                      HorizontalAlignment="Center"/>
+
+            <!-- 进度条 -->
+            <ProgressBar x:Name="ProgressBar"
+                        Value="0"
+                        Maximum="100"
+                        Height="12"
+                        Margin="0,10"/>
+
+            <!-- 进度文本 -->
+            <TextBlock x:Name="ProgressText"
+                      Text="0%"
+                      HorizontalAlignment="Center"
+                      Classes="secondary"/>
+
+            <!-- 取消按钮 -->
+            <Button x:Name="CancelButton"
+                   Content="取消"
+                   Classes="secondary"
+                   HorizontalAlignment="Center"
+                   MinWidth="100"/>
+        </StackPanel>
+    </Border>
+</Window>

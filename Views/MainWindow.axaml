@@ -1,0 +1,529 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:converters="using:PrintToolAvalonia.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="1200" d:DesignHeight="800"
+        x:Class="PrintToolAvalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="电商打单工具"
+        Width="1200" Height="800">
+
+    <Window.Resources>
+        <converters:PlatformToRuleConverter x:Key="PlatformToRuleConverter"/>
+    </Window.Resources>
+
+    <Design.DataContext>
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <Grid RowDefinitions="Auto,*">
+        <!-- 顶部工具栏 -->
+        <Border Grid.Row="0" Classes="toolbar">
+            <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBlock Grid.Column="0" 
+                          Text="电商打单工具" 
+                          Classes="title"
+                          VerticalAlignment="Center"/>
+                
+                <Button Grid.Column="1" 
+                       Content="设置" 
+                       Command="{Binding OpenSettingsCommand}"
+                       Classes="secondary"
+                       Margin="0,0,10,0"/>
+                
+                <Button Grid.Column="2" 
+                       Content="历史" 
+                       Command="{Binding OpenHistoryCommand}"
+                       Classes="secondary"/>
+            </Grid>
+        </Border>
+
+        <!-- 主内容区 -->
+        <TabControl Grid.Row="1" Margin="10">
+            <!-- 打印标签页 -->
+            <TabItem Header="打印">
+                <Grid RowDefinitions="Auto,*,Auto,Auto" Margin="10">
+                    <!-- 平台选择 -->
+                    <ComboBox Grid.Row="0" 
+                             ItemsSource="{Binding Platforms}"
+                             SelectedItem="{Binding SelectedPlatform}"
+                             Width="200"
+                             HorizontalAlignment="Left"
+                             Margin="0,0,0,10"/>
+
+                    <!-- 文件区域 -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <!-- 主单区域 -->
+                        <Border Grid.Column="0" 
+                               Classes="drop-zone"
+                               Name="MainOrderDropZone"
+                               DragDrop.AllowDrop="True">
+                            <Grid RowDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Row="0" 
+                                          Text="主单 PDF" 
+                                          Classes="section-title"/>
+                                
+                                <!-- 文件列表或空状态提示 -->
+                                <Grid Grid.Row="1" Margin="0,10">
+                                    <!-- 文件列表 -->
+                                    <ListBox ItemsSource="{Binding MainOrderFiles}"
+                                            IsVisible="{Binding MainOrderFiles.Count}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding Name}" 
+                                                                  FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding PageCount, StringFormat='页数: {0}'}" 
+                                                                  Classes="secondary"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" 
+                                                           Content="删除"
+                                                           Command="{Binding $parent[Window].DataContext.RemoveFileCommand}"
+                                                           CommandParameter="{Binding}"
+                                                           Classes="danger"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    
+                                    <!-- 空状态提示 -->
+                                    <StackPanel HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center"
+                                               Spacing="15">
+                                        <StackPanel.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                <Binding Path="!MainOrderFiles.Count"/>
+                                            </MultiBinding>
+                                        </StackPanel.IsVisible>
+                                        
+                                        <!-- 图标 -->
+                                        <Viewbox Width="64" Height="64" 
+                                                HorizontalAlignment="Center">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Fill="#BDBDBD" 
+                                                     Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M10,19L12,15H9V10H15V15L13,19H10Z"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                        
+                                        <!-- 提示文字 -->
+                                        <TextBlock Text="拖放 PDF 文件到此处" 
+                                                  FontSize="16"
+                                                  FontWeight="SemiBold"
+                                                  Foreground="#757575"
+                                                  HorizontalAlignment="Center"/>
+                                        <TextBlock Text="或点击下方'添加文件'按钮" 
+                                                  FontSize="13"
+                                                  Foreground="#9E9E9E"
+                                                  HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                                
+                                <StackPanel Grid.Row="2" 
+                                           Orientation="Horizontal" 
+                                           Spacing="10"
+                                           Margin="0,10,0,0">
+                                    <Button Content="添加文件" 
+                                           Command="{Binding AddFilesCommand}"
+                                           CommandParameter="MainOrder"
+                                           Classes="secondary"/>
+                                    <Button Content="清空" 
+                                           Command="{Binding ClearAllCommand}"
+                                           CommandParameter="MainOrder"
+                                           Classes="secondary"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <!-- 条码区域 -->
+                        <Border Grid.Column="1" 
+                               Classes="drop-zone"
+                               Name="BarcodeDropZone"
+                               DragDrop.AllowDrop="True">
+                            <Grid RowDefinitions="Auto,*,Auto">
+                                <TextBlock Grid.Row="0" 
+                                          Text="条码 PDF" 
+                                          Classes="section-title"/>
+                                
+                                <!-- 文件列表或空状态提示 -->
+                                <Grid Grid.Row="1" Margin="0,10">
+                                    <!-- 文件列表 -->
+                                    <ListBox ItemsSource="{Binding BarcodeFiles}"
+                                            IsVisible="{Binding BarcodeFiles.Count}">
+                                        <ListBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <StackPanel Grid.Column="0">
+                                                        <TextBlock Text="{Binding Name}" 
+                                                                  FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding PageCount, StringFormat='页数: {0}'}" 
+                                                                  Classes="secondary"/>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="1" 
+                                                           Content="删除"
+                                                           Command="{Binding $parent[Window].DataContext.RemoveFileCommand}"
+                                                           CommandParameter="{Binding}"
+                                                           Classes="danger"/>
+                                                </Grid>
+                                            </DataTemplate>
+                                        </ListBox.ItemTemplate>
+                                    </ListBox>
+                                    
+                                    <!-- 空状态提示 -->
+                                    <StackPanel HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center"
+                                               Spacing="15">
+                                        <StackPanel.IsVisible>
+                                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                                <Binding Path="!BarcodeFiles.Count"/>
+                                            </MultiBinding>
+                                        </StackPanel.IsVisible>
+                                        
+                                        <!-- 图标 -->
+                                        <Viewbox Width="64" Height="64" 
+                                                HorizontalAlignment="Center">
+                                            <Canvas Width="24" Height="24">
+                                                <Path Fill="#BDBDBD" 
+                                                     Data="M2,6H4V18H2V6M5,6H6V18H5V6M7,6H10V18H7V6M11,6H12V18H11V6M14,6H16V18H14V6M17,6H20V18H17V6M21,6H22V18H21V6Z"/>
+                                            </Canvas>
+                                        </Viewbox>
+                                        
+                                        <!-- 提示文字 -->
+                                        <TextBlock Text="拖放 PDF 文件到此处" 
+                                                  FontSize="16"
+                                                  FontWeight="SemiBold"
+                                                  Foreground="#757575"
+                                                  HorizontalAlignment="Center"/>
+                                        <TextBlock Text="或点击下方'添加文件'按钮" 
+                                                  FontSize="13"
+                                                  Foreground="#9E9E9E"
+                                                  HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Grid>
+                                
+                                <StackPanel Grid.Row="2" 
+                                           Orientation="Horizontal" 
+                                           Spacing="10"
+                                           Margin="0,10,0,0">
+                                    <Button Content="添加文件" 
+                                           Command="{Binding AddFilesCommand}"
+                                           CommandParameter="Barcode"
+                                           Classes="secondary"/>
+                                    <Button Content="清空" 
+                                           Command="{Binding ClearAllCommand}"
+                                           CommandParameter="Barcode"
+                                           Classes="secondary"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                    
+                    <!-- 环保码和英代欧代选项区域 -->
+                    <Border Grid.Row="2" 
+                           Classes="options-panel" 
+                           Margin="0,10">
+                        <StackPanel Spacing="15">
+                            <!-- 环保码选择行 -->
+                            <Grid ColumnDefinitions="Auto,200,Auto,100,Auto,*">
+                                <TextBlock Grid.Column="0" 
+                                          Text="环保码：" 
+                                          VerticalAlignment="Center" 
+                                          Margin="0,0,10,0"/>
+                                
+                                <ComboBox Grid.Column="1" 
+                                         ItemsSource="{Binding EcoCodes}"
+                                         SelectedItem="{Binding SelectedEcoCode}"
+                                         DisplayMemberBinding="{Binding Name}"
+                                         PlaceholderText="请选择环保码"/>
+                                
+                                <TextBlock Grid.Column="2" 
+                                          Text="数量：" 
+                                          VerticalAlignment="Center" 
+                                          Margin="15,0,10,0"/>
+                                
+                                <NumericUpDown Grid.Column="3" 
+                                              Value="{Binding CustomEcoCodeQuantity}"
+                                              Minimum="0" 
+                                              Maximum="999"
+                                              FormatString="0"
+                                              Increment="1"/>
+                                
+                                <TextBlock Grid.Column="4" 
+                                          Text="张" 
+                                          VerticalAlignment="Center" 
+                                          Margin="5,0,15,0"/>
+                                
+                                <TextBlock Grid.Column="5" 
+                                          VerticalAlignment="Center"
+                                          Classes="secondary"
+                                          FontSize="12">
+                                    <TextBlock.Text>
+                                        <MultiBinding StringFormat="计算规则: {0} 平台 - {1}">
+                                            <Binding Path="SelectedPlatform"/>
+                                            <Binding Path="SelectedPlatform" Converter="{StaticResource PlatformToRuleConverter}"/>
+                                        </MultiBinding>
+                                    </TextBlock.Text>
+                                </TextBlock>
+                            </Grid>
+                            
+                            <!-- 英代欧代条码行 -->
+                            <Grid ColumnDefinitions="Auto,Auto,100,Auto">
+                                <CheckBox Grid.Column="0" 
+                                         IsChecked="{Binding UkEuBarcodeEnabled}"
+                                         Content="英代欧代条码"
+                                         VerticalAlignment="Center"
+                                         Margin="0,0,10,0"/>
+                                
+                                <TextBlock Grid.Column="1" 
+                                          Text="（内置条码，使用条码打印机）" 
+                                          FontSize="12" 
+                                          Classes="secondary"
+                                          VerticalAlignment="Center" 
+                                          Margin="0,0,15,0"/>
+                                
+                                <NumericUpDown Grid.Column="2" 
+                                              Value="{Binding UkEuBarcodeQuantity}"
+                                              Minimum="0" 
+                                              Maximum="999"
+                                              FormatString="0"
+                                              Increment="1"
+                                              IsEnabled="{Binding UkEuBarcodeEnabled}"/>
+                                
+                                <TextBlock Grid.Column="3" 
+                                          Text="张" 
+                                          VerticalAlignment="Center" 
+                                          Margin="5,0"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- 底部统计和操作区 -->
+                    <Border Grid.Row="3" 
+                           Classes="summary-panel" 
+                           Margin="0,10,0,0"
+                           Padding="20">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <!-- 统计信息 -->
+                            <StackPanel Grid.Column="0" 
+                                       Orientation="Horizontal" 
+                                       Spacing="40" 
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center">
+                                <!-- 主单统计 -->
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="主单" 
+                                              FontSize="12" 
+                                              Classes="secondary"
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding MainOrderCount}" 
+                                              FontSize="28" 
+                                              FontWeight="Bold" 
+                                              Foreground="#409EFF" 
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <!-- 条码统计 -->
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="条码" 
+                                              FontSize="12" 
+                                              Classes="secondary"
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding BarcodeCount}" 
+                                              FontSize="28" 
+                                              FontWeight="Bold" 
+                                              Foreground="#409EFF" 
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <!-- 环保码统计 -->
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="环保码" 
+                                              FontSize="12" 
+                                              Classes="secondary"
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding CustomEcoCodeQuantity}" 
+                                              FontSize="28" 
+                                              FontWeight="Bold" 
+                                              Foreground="#67C23A" 
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <!-- 英代欧代统计 -->
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="英代欧代" 
+                                              FontSize="12" 
+                                              Classes="secondary"
+                                              HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding UkEuBarcodeQuantity}" 
+                                              FontSize="28" 
+                                              FontWeight="Bold" 
+                                              Foreground="#E6A23C" 
+                                              HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </StackPanel>
+                            
+                            <!-- 操作按钮和进度 -->
+                            <StackPanel Grid.Column="1" 
+                                       Spacing="10"
+                                       VerticalAlignment="Center">
+                                <!-- 进度显示 -->
+                                <StackPanel Orientation="Horizontal"
+                                           Spacing="10"
+                                           HorizontalAlignment="Right"
+                                           IsVisible="{Binding IsPrinting}">
+                                    <ProgressBar Value="{Binding PrintProgress}" 
+                                                Width="150"
+                                                Height="8"
+                                                VerticalAlignment="Center"/>
+                                    <TextBlock Text="{Binding PrintProgress, StringFormat='{}{0}%'}" 
+                                              VerticalAlignment="Center"
+                                              MinWidth="40"/>
+                                </StackPanel>
+                                
+                                <!-- 按钮组 -->
+                                <StackPanel Orientation="Horizontal" 
+                                           Spacing="10"
+                                           HorizontalAlignment="Right">
+                                    <Button Content="清空全部" 
+                                           Command="{Binding ClearAllCommand}"
+                                           CommandParameter=""
+                                           Classes="secondary"
+                                           IsEnabled="{Binding !IsPrinting}"
+                                           MinWidth="100"/>
+                                    
+                                    <Button Content="开始打印" 
+                                           Command="{Binding PrintCommand}"
+                                           Classes="accent"
+                                           IsEnabled="{Binding !IsPrinting}"
+                                           MinWidth="120"/>
+                                </StackPanel>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- 环保码管理标签页 -->
+            <TabItem Header="环保码管理">
+                <Grid Margin="10" RowDefinitions="Auto,*">
+                    <!-- 顶部操作栏 -->
+                    <Border Grid.Row="0" 
+                           Classes="toolbar"
+                           Margin="0,0,0,10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Grid.Column="0"
+                                      Text="环保码文件管理"
+                                      Classes="section-title"
+                                      VerticalAlignment="Center"/>
+                            <Button Grid.Column="1"
+                                   Content="添加环保码"
+                                   Command="{Binding EcoCodeViewModel.AddEcoCodeCommand}"
+                                   Classes="accent"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 环保码列表 -->
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding EcoCodeViewModel.EcoCodes}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="10"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="card">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="15">
+                                            <!-- 图标 -->
+                                            <Viewbox Grid.Column="0" 
+                                                    Width="40" Height="40"
+                                                    VerticalAlignment="Center">
+                                                <Canvas Width="24" Height="24">
+                                                    <Path Fill="#67C23A" 
+                                                         Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M12,19L15,16H13V12H11V16H9L12,19Z"/>
+                                                </Canvas>
+                                            </Viewbox>
+
+                                            <!-- 信息 -->
+                                            <StackPanel Grid.Column="1" 
+                                                       VerticalAlignment="Center"
+                                                       Spacing="5">
+                                                <TextBlock Text="{Binding Name}" 
+                                                          FontSize="16"
+                                                          FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding CreatedAt, StringFormat='创建时间: {0:yyyy-MM-dd HH:mm:ss}'}" 
+                                                          FontSize="12"
+                                                          Classes="secondary"/>
+                                            </StackPanel>
+
+                                            <!-- 预览按钮 -->
+                                            <Button Grid.Column="2"
+                                                   Content="预览"
+                                                   Command="{Binding $parent[Window].DataContext.PreviewEcoCodeCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   Classes="secondary"
+                                                   MinWidth="80"/>
+
+                                            <!-- 重命名按钮 -->
+                                            <Button Grid.Column="3"
+                                                   Content="重命名"
+                                                   Command="{Binding $parent[Window].DataContext.EcoCodeViewModel.RenameEcoCodeCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   Classes="secondary"
+                                                   MinWidth="80"/>
+
+                                            <!-- 删除按钮 -->
+                                            <Button Grid.Column="4"
+                                                   Content="删除"
+                                                   Command="{Binding $parent[Window].DataContext.EcoCodeViewModel.DeleteEcoCodeCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   Classes="danger"
+                                                   MinWidth="80"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- 空状态提示 -->
+                    <StackPanel Grid.Row="1"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Spacing="20">
+                        <StackPanel.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                <Binding Path="!EcoCodeViewModel.EcoCodes.Count"/>
+                            </MultiBinding>
+                        </StackPanel.IsVisible>
+
+                        <!-- 图标 -->
+                        <Viewbox Width="80" Height="80" 
+                                HorizontalAlignment="Center">
+                            <Canvas Width="24" Height="24">
+                                <Path Fill="#BDBDBD" 
+                                     Data="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                            </Canvas>
+                        </Viewbox>
+
+                        <!-- 提示文字 -->
+                        <TextBlock Text="还没有环保码文件" 
+                                  FontSize="18"
+                                  FontWeight="SemiBold"
+                                  Foreground="#757575"
+                                  HorizontalAlignment="Center"/>
+                        <TextBlock Text="点击上方'添加环保码'按钮开始添加" 
+                                  FontSize="14"
+                                  Foreground="#9E9E9E"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</Window>
+

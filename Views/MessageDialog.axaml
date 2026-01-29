@@ -1,0 +1,37 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="400" d:DesignHeight="200"
+        x:Class="PrintToolAvalonia.Views.MessageDialog"
+        Title="提示"
+        Width="400" Height="200"
+        WindowStartupLocation="CenterOwner"
+        CanResize="False">
+
+    <Grid RowDefinitions="*,Auto" Margin="20">
+        <!-- 消息区域 -->
+        <StackPanel Grid.Row="0" 
+                   Spacing="15" 
+                   VerticalAlignment="Center"
+                   HorizontalAlignment="Center">
+            <TextBlock Name="MessageTextBlock"
+                      TextWrapping="Wrap"
+                      FontSize="14"
+                      TextAlignment="Center"
+                      MaxWidth="360"/>
+        </StackPanel>
+
+        <!-- 按钮区域 -->
+        <StackPanel Grid.Row="1" 
+                   Orientation="Horizontal" 
+                   HorizontalAlignment="Center"
+                   Spacing="10"
+                   Margin="0,20,0,0">
+            <Button Content="确定" 
+                   Click="OnOkClick"
+                   Classes="accent"
+                   MinWidth="100"/>
+        </StackPanel>
+    </Grid>
+</Window>
