@@ -119,10 +119,12 @@ public class OcrService : IOcrService
                 // 裁剪图像到指定区域
                 using var croppedImage = CropImage(systemBitmap, region);
                 
-                // 保存裁剪后的图像用于调试
+#if DEBUG
+                // 保存裁剪后的图像用于调试（仅在Debug模式）
                 var debugPath = Path.Combine(Path.GetTempPath(), $"ocr_debug_{DateTime.Now:yyyyMMddHHmmss}.png");
                 croppedImage.Save(debugPath, System.Drawing.Imaging.ImageFormat.Png);
                 System.Diagnostics.Debug.WriteLine($"裁剪图像已保存到: {debugPath}");
+#endif
                 
                 // 将System.Drawing.Bitmap转换为Tesseract.Pix
                 using var pix = Pix.LoadFromMemory(BitmapToBytes(croppedImage));
@@ -277,10 +279,12 @@ public class OcrService : IOcrService
                     // 图像预处理：提高对比度和清晰度
                     using var processedImage = PreprocessImage(croppedImage);
                     
-                    // 保存预处理后的图像用于调试
+#if DEBUG
+                    // 保存预处理后的图像用于调试（仅在Debug模式）
                     var debugPath = Path.Combine(Path.GetTempPath(), $"ocr_debug_{language.Replace("+", "_")}_processed_{DateTime.Now:yyyyMMddHHmmss}.png");
                     processedImage.Save(debugPath, System.Drawing.Imaging.ImageFormat.Png);
                     System.Diagnostics.Debug.WriteLine($"预处理图像已保存到: {debugPath}");
+#endif
                     
                     // 将System.Drawing.Bitmap转换为Tesseract.Pix
                     using var pix = Pix.LoadFromMemory(BitmapToBytes(processedImage));
@@ -312,10 +316,12 @@ public class OcrService : IOcrService
                 {
                     System.Diagnostics.Debug.WriteLine("预处理识别结果为空，尝试使用原图识别");
                     
-                    // 保存原图用于调试
+#if DEBUG
+                    // 保存原图用于调试（仅在Debug模式）
                     var debugPath = Path.Combine(Path.GetTempPath(), $"ocr_debug_{language.Replace("+", "_")}_original_{DateTime.Now:yyyyMMddHHmmss}.png");
                     croppedImage.Save(debugPath, System.Drawing.Imaging.ImageFormat.Png);
                     System.Diagnostics.Debug.WriteLine($"原始图像已保存到: {debugPath}");
+#endif
                     
                     // 将System.Drawing.Bitmap转换为Tesseract.Pix
                     using var pix = Pix.LoadFromMemory(BitmapToBytes(croppedImage));
