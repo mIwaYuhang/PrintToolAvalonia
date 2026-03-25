@@ -1,0 +1,49 @@
+{
+  "id": "default_100x100",
+  "name": "默认100x100模板",
+  "batchNumberLabel": "Batch Number/Parti Numaras",
+  "batchNumber": "2222",
+  "manufacturerLabel": "Manufacturer/Uretici",
+  "manufacturerName": "Yiwushigudaodianzishangwushanghang(getigongshanghu)",
+  "addressLabel": "Address/Adres",
+  "manufacturerAddress": "Zhejiang ProvinceJinhua CityYiwu CityRoom 101, Building 2, Panlong Community, Houyu West District, Houzhai Street, Yiwu City, Jinhua City, Zhejiang Province",
+  "manufacturerEmailLabel": "ManufacturerE-mail",
+  "manufacturerEmail": "18179240368@163.com",
+  "representativeLabel": "REP",
+  "representatives": [
+    {
+      "regionCode": "EU",
+      "name": "ZXY Horizon SAS",
+      "address": "Bureau 797 37 passage du Ponceau,PARIS/Paris,France",
+      "email": "friedlichtrichter@outlook.com"
+    },
+    {
+      "regionCode": "UK",
+      "name": "Reesp Europe Ltd.",
+      "address": "The Sati Room, 12 John Princes Street, London, W1G 0JR",
+      "email": "ReespEurope@outlook.com"
+    },
+    {
+      "regionCode": "TUR",
+      "name": "LEDMAN TEKNOLOJI LIMITED ŞİRKETİ",
+      "address": "Ad/Adres: Yenibosna Merkez, 1. Asena Sk. No:15, 34295 Bahçelievler/İstanbul",
+      "email": "turservices@authrepglobal.com"
+    }
+  ],
+  "importerInfo": {
+    "euTitle": "For EU",
+    "euImporterNameLabel": "EU Importer Name",
+    "euImporterName": "Whaleco Technology Limited",
+    "euImporterAddressLabel": "EU Importer Address",
+    "euImporterAddress": "First Floor, 25 St Stephens Green, Dublin 2, Ireland",
+    "euImporterElectronicAddressLabel": "EU Importer Electronic Address",
+    "euImporterElectronicAddress": "https://www.temu.com/contact-us.html",
+    "ukTitle": "For UK",
+    "ukImporterNameLabel": "UK Importer Name",
+    "ukImporterName": "Whaleco UK Limited",
+    "ukImporterAddressLabel": "UK Importer Address",
+    "ukImporterAddress": "5 Churchill Place, 10th Floor, London, United Kingdom, E14 5HU"
+  },
+  "footerImageFileName": "环保标识.png",
+  "warningText": "WARNING: TO AVOID DANGER OF SUFFOCATION, KEEP THIS PLASTIC BAG AWAY FROM BABIES AND CHILDREN. DO NOT USE THIS BAG IN CRIBS, BEDS, CARRIAGES OR PLAYPENS. THIS BAG IS NOT A TOY"
+}

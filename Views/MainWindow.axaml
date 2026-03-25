@@ -394,6 +394,12 @@
                                            IsEnabled="{Binding !IsPrinting}"
                                            MinWidth="100"/>
                                     
+                                    <Button Content="模板标签" 
+                                           Command="{Binding TemplateLabelPrintCommand}"
+                                           Classes="secondary"
+                                           IsEnabled="{Binding !IsPrinting}"
+                                           MinWidth="100"/>
+
                                     <Button Content="单打" 
                                            Command="{Binding SinglePagePrintCommand}"
                                            Classes="secondary"
@@ -409,6 +415,71 @@
                             </StackPanel>
                         </Grid>
                     </Border>
+                </Grid>
+            </TabItem>
+
+            <TabItem Header="模板配置">
+                <Grid Margin="10" RowDefinitions="Auto,*">
+                    <Border Grid.Row="0"
+                           Classes="toolbar"
+                           Margin="0,0,0,10">
+                        <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="模板配置管理" Classes="section-title"/>
+                                <TextBlock Text="在这里新建或编辑模板，右侧编辑器会实时显示最终打印效果预览。"
+                                          Classes="secondary"
+                                          FontSize="12"/>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                   Content="新建模板"
+                                   Command="{Binding CreateTemplateConfigCommand}"
+                                   Classes="secondary"
+                                   MinWidth="100"/>
+                            <Button Grid.Column="2"
+                                   Content="编辑模板"
+                                   Command="{Binding EditTemplateConfigCommand}"
+                                   Classes="accent"
+                                   MinWidth="100"/>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="1">
+                        <ListBox ItemsSource="{Binding LabelTemplates}"
+                                 SelectedItem="{Binding SelectedLabelTemplate}"
+                                 IsVisible="{Binding LabelTemplates.Count}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="card" Margin="0,0,0,10">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15">
+                                            <StackPanel Grid.Column="0" Spacing="5">
+                                                <TextBlock Text="{Binding Name}" FontSize="16" FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding Id, StringFormat='模板ID: {0}'}" Classes="secondary"/>
+                                                <TextBlock Text="{Binding SourceFilePath}" Classes="secondary" TextWrapping="Wrap" FontSize="12"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1"
+                                                   Content="编辑"
+                                                   Command="{Binding $parent[Window].DataContext.EditTemplateConfigCommand}"
+                                                   Classes="secondary"
+                                                   MinWidth="80"
+                                                   VerticalAlignment="Center"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   Spacing="16">
+                            <StackPanel.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                    <Binding Path="!LabelTemplates.Count"/>
+                                </MultiBinding>
+                            </StackPanel.IsVisible>
+                            <TextBlock Text="还没有模板配置" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                            <TextBlock Text="点击上方“新建模板”开始创建可预览的模板配置" Classes="secondary" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Grid>
                 </Grid>
             </TabItem>
 

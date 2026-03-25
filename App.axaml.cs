@@ -109,6 +109,7 @@ public partial class App : Application
         services.AddSingleton<IOcrService, OcrService>();
         services.AddSingleton<IImageMatchService, ImageMatchService>();
         services.AddSingleton<IBarcodeGroupService, BarcodeGroupService>();
+        services.AddSingleton<ILabelTemplateService, LabelTemplateService>();
 
         // 注册 ViewModels
         services.AddTransient<MainWindowViewModel>();
@@ -118,6 +119,8 @@ public partial class App : Application
         services.AddTransient<SinglePagePrintViewModel>();
         services.AddTransient<OcrRegionConfigViewModel>();
         services.AddTransient<LabelSelectionViewModel>();
+        services.AddTransient<TemplateLabelPrintViewModel>();
+        services.AddTransient<LabelTemplateEditorViewModel>();
 
         // 注册 Views
         services.AddTransient<MainWindow>();
@@ -126,6 +129,8 @@ public partial class App : Application
         services.AddTransient<SinglePagePrintDialog>();
         services.AddTransient<OcrRegionConfigDialog>();
         services.AddTransient<LabelSelectionDialog>();
+        services.AddTransient<TemplateLabelPrintDialog>();
+        services.AddTransient<LabelTemplateEditorDialog>();
     }
 
     private void DisableAvaloniaDataAnnotationValidation()

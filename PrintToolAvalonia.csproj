@@ -22,6 +22,7 @@
     <!-- 程序集裁剪 -->
     <PublishTrimmed>true</PublishTrimmed>
     <TrimMode>partial</TrimMode>
+    <JsonSerializerIsReflectionEnabledByDefault>true</JsonSerializerIsReflectionEnabledByDefault>
     
     <!-- 优化设置 -->
     <DebugType>none</DebugType>
@@ -61,6 +62,7 @@
     <TrimmerRootAssembly Include="itext.io" />
     <TrimmerRootAssembly Include="itext.commons" />
     <TrimmerRootAssembly Include="itext.barcodes" />
+    <TrimmerRootAssembly Include="itext.html2pdf" />
     <TrimmerRootAssembly Include="LiteDB" />
     <TrimmerRootAssembly Include="Newtonsoft.Json" />
     <TrimmerRootAssembly Include="Tesseract" />
@@ -70,6 +72,13 @@
   <!-- JSON序列化裁剪配置：保留所有模型类型 -->
   <ItemGroup>
     <TrimmerRootDescriptor Include="TrimmerRoots.xml" />
+  </ItemGroup>
+
+  <!-- itext.pdfhtml 的 NuGet 包在 net10.0 下编译资产解析失败，手动引用 DLL -->
+  <ItemGroup>
+    <Reference Include="itext.html2pdf">
+      <HintPath>lib\itext.html2pdf.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
@@ -85,7 +94,8 @@
     </PackageReference>
     <PackageReference Include="Avalonia.Markup.Xaml.Loader" Version="11.3.11" />
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.1" />
-    <PackageReference Include="itext7" Version="9.0.0" />
+    <PackageReference Include="itext.bouncy-castle-adapter" Version="9.5.0" />
+    <PackageReference Include="itext7" Version="9.5.0" />
     <PackageReference Include="LiteDB" Version="5.0.21" />
     <PackageReference Include="PdfiumViewer" Version="2.13.0" />
     <PackageReference Include="PdfiumViewer.Native.x86_64.v8-xfa" Version="2018.4.8.256" />

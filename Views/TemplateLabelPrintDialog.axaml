@@ -1,0 +1,247 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:converters="using:PrintToolAvalonia.Converters"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d"
+        x:Class="PrintToolAvalonia.Views.TemplateLabelPrintDialog"
+        x:DataType="vm:TemplateLabelPrintViewModel"
+        Title="模板标签打印"
+        Width="980"
+        Height="760"
+        WindowStartupLocation="CenterOwner"
+        CanResize="True">
+
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Margin="20">
+        <Border Grid.Row="0" Classes="card" Padding="15" Margin="0,0,0,15">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15">
+                <StackPanel Grid.Column="0" Spacing="10">
+                    <TextBlock Text="100mm x 100mm 模板标签打印" Classes="section-title"/>
+                    <TextBlock Text="模板由 JSON 配置驱动，条码会合并进模板 PDF。打印时会先输出当前主单页，再输出后续 100x100 模板标签。"
+                               Classes="secondary"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+                <Border Grid.Column="1"
+                        Background="#F5F7FA"
+                        BorderBrush="#DCDFE6"
+                        BorderThickness="1"
+                        CornerRadius="6"
+                        Padding="12"
+                        VerticalAlignment="Center">
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="固定尺寸" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="100 x 100 mm" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="15" Margin="0,0,0,15">
+            <Border Grid.Column="0" Classes="card" Padding="15">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="模板设置" Classes="section-title"/>
+                    <StackPanel Spacing="8">
+                        <TextBlock Text="模板 JSON"/>
+                        <ComboBox ItemsSource="{Binding TemplateConfigs}"
+                                  SelectedItem="{Binding SelectedTemplateConfig}"
+                                  DisplayMemberBinding="{Binding Name}"
+                                  PlaceholderText="请选择模板"/>
+                    </StackPanel>
+                    <CheckBox IsChecked="{Binding IncludeImporterInfo}"
+                              Content="勾选时显示欧代/英代进口商信息"/>
+                    <TextBlock Text="模板请到主界面上方“模板配置”标签页中新增或编辑"
+                                Classes="secondary"
+                                FontSize="12"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Classes="card" Padding="15">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="条码来源" Classes="section-title"/>
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <Border Grid.Column="0"
+                                Background="#F5F7FA"
+                                BorderBrush="#DCDFE6"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10">
+                            <TextBlock Text="{Binding CurrentBarcodeFileName}" TextWrapping="Wrap"/>
+                        </Border>
+                        <Button Grid.Column="1"
+                                Content="选择条码 PDF"
+                                Command="{Binding ChooseBarcodePdfCommand}"
+                                Classes="secondary"
+                                MinWidth="120"
+                                IsEnabled="{Binding !IsScanningBarcode}"/>
+                    </Grid>
+                    <Button Content="添加条码分组到队列"
+                            Command="{Binding AddBarcodeGroupCommand}"
+                            Classes="accent"
+                            HorizontalAlignment="Left"
+                            MinWidth="160"
+                            IsEnabled="{Binding !IsScanningBarcode}"/>
+                    <TextBlock Text="{Binding StatusMessage}"
+                               Classes="secondary"
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <Border Grid.Row="2" Classes="card" Padding="15">
+            <Grid ColumnDefinitions="340,*" ColumnSpacing="15">
+                <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <StackPanel Grid.Row="0" Spacing="4">
+                        <TextBlock Text="主单当前页" Classes="section-title"/>
+                        <TextBlock Text="{Binding MainOrderFileName}" Classes="secondary" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <Border Grid.Row="1"
+                            BorderBrush="#EBEEF5"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Background="White">
+                        <Grid>
+                            <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                                         VerticalScrollBarVisibility="Auto">
+                                <Image Source="{Binding CurrentMainOrderImage}"
+                                      Stretch="Uniform"
+                                      IsVisible="{Binding !IsLoadingMainOrderPage}"/>
+                            </ScrollViewer>
+
+                            <Border Background="#80000000"
+                                    IsVisible="{Binding IsLoadingMainOrderPage}">
+                                <TextBlock Text="主单加载中..."
+                                          Foreground="White"
+                                          FontSize="16"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center"/>
+                            </Border>
+                        </Grid>
+                    </Border>
+
+                    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                        <Button Grid.Column="0"
+                                Content="上一页"
+                                Command="{Binding PreviousMainOrderPageCommand}"
+                                Classes="secondary"
+                                MinWidth="90"/>
+                        <TextBlock Grid.Column="1"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center"
+                                  FontWeight="SemiBold">
+                            <Run Text="第 "/>
+                            <Run Text="{Binding CurrentMainOrderPage}"/>
+                            <Run Text=" 页 / 共 "/>
+                            <Run Text="{Binding MainOrderTotalPages}"/>
+                            <Run Text=" 页"/>
+                        </TextBlock>
+                        <Button Grid.Column="2"
+                                Content="下一页"
+                                Command="{Binding NextMainOrderPageCommand}"
+                                Classes="secondary"
+                                MinWidth="90"/>
+                    </Grid>
+                </Grid>
+
+                <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                        <StackPanel Grid.Column="0" Spacing="4">
+                            <TextBlock Text="待打印分组队列" Classes="section-title"/>
+                            <TextBlock Text="{Binding QueueSummary}" Classes="secondary"/>
+                        </StackPanel>
+                        <Button Grid.Column="1"
+                                Content="清空队列"
+                                Command="{Binding ClearQueueCommand}"
+                                Classes="secondary"
+                                HorizontalAlignment="Right"
+                                MinWidth="100"/>
+                    </Grid>
+
+                    <Border Grid.Row="1"
+                            BorderBrush="#EBEEF5"
+                            BorderThickness="1"
+                            CornerRadius="6">
+                        <Grid>
+                            <ListBox ItemsSource="{Binding QueueItems}"
+                                     IsVisible="{Binding QueueItems.Count}">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border BorderBrush="#F0F2F5"
+                                                BorderThickness="0,0,0,1"
+                                                Padding="12">
+                                            <Grid ColumnDefinitions="2*,*,Auto" ColumnSpacing="10">
+                                                <StackPanel Grid.Column="0" Spacing="4">
+                                                    <TextBlock Text="{Binding SourceFileName}" FontWeight="SemiBold"/>
+                                                    <TextBlock Text="{Binding GroupDisplay, StringFormat='分组范围：{0}'}" Classes="secondary"/>
+                                                </StackPanel>
+                                                <StackPanel Grid.Column="1" Spacing="4">
+                                                    <TextBlock Text="{Binding TemplateName, StringFormat='模板：{0}'}"/>
+                                                    <TextBlock Text="{Binding LabelCount, StringFormat='标签数量：{0}'}" Classes="secondary"/>
+                                                </StackPanel>
+                                                <Button Grid.Column="2"
+                                                        Content="删除"
+                                                        Command="{Binding $parent[Window].DataContext.RemoveQueueItemCommand}"
+                                                        CommandParameter="{Binding}"
+                                                        Classes="danger"
+                                                        MinWidth="80"/>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                            </ListBox>
+
+                            <StackPanel HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"
+                                       Spacing="10">
+                                <StackPanel.IsVisible>
+                                    <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                        <Binding Path="!QueueItems.Count"/>
+                                    </MultiBinding>
+                                </StackPanel.IsVisible>
+                                <TextBlock Text="队列为空" FontSize="18" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                <TextBlock Text="请先选择条码分组加入待打印队列" Classes="secondary" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+
+                    <Border Grid.Row="2"
+                            Background="#F5F7FA"
+                            BorderBrush="#E4E7ED"
+                            BorderThickness="1"
+                            CornerRadius="6"
+                            Padding="12">
+                        <TextBlock Text="说明：每个条码页会生成 1 张 100x100 模板标签，条码内容会直接合并进模板；点击打印时会先打印左侧当前主单页。"
+                                   Classes="secondary"
+                                   TextWrapping="Wrap"/>
+                    </Border>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="0,15,0,0">
+            <TextBlock Grid.Column="0"
+                      Text="{Binding StatusMessage}"
+                      VerticalAlignment="Center"
+                      Classes="secondary"
+                      TextWrapping="Wrap"/>
+            <Button Grid.Column="1"
+                    Content="关闭"
+                    Classes="secondary"
+                    MinWidth="100"
+                    Click="OnCloseClick"/>
+            <Button Grid.Column="2"
+                    Command="{Binding PrintCommand}"
+                    Classes="accent"
+                    MinWidth="140"
+                    IsEnabled="{Binding !IsPrinting}">
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="生成并打印" IsVisible="{Binding !IsPrinting}"/>
+                        <TextBlock Text="打印中..." IsVisible="{Binding IsPrinting}"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>

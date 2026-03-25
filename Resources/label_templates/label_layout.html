@@ -1,0 +1,90 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Tahoma, "Microsoft YaHei", "Segoe UI", Arial, Helvetica, sans-serif; font-size: 5.8pt; line-height: 1.12; color: #000; word-break: break-word; }
+
+  .label { width: 98mm; height: 98mm; border: 1.35pt solid #000; overflow: hidden; }
+  .section-sep { border-bottom: 0.95pt solid #000; }
+  .sep-l { border-left: 0.95pt solid #000; }
+
+  .barcode-section { height: 21.4mm; padding: 0.75pt; text-align: center; }
+  .barcode-holder { width: 100%; height: 100%; display: table; }
+  .barcode-inner { display: table-cell; vertical-align: middle; text-align: center; }
+  .barcode-frame { width: 100%; height: 100%; margin: 0 auto; overflow: hidden; display: table; table-layout: fixed; }
+  .barcode-frame-inner { display: table-cell; vertical-align: middle; text-align: center; }
+
+  .manufacturer-section { height: 15.6mm; overflow: hidden; display: table; width: 100%; }
+  .manufacturer-inner { display: table-cell; vertical-align: middle; }
+  .kv { padding: 1pt 2.2pt; border-bottom: 0.75pt solid #000; font-size: 5.9pt; line-height: 1.14; font-weight: 600; }
+  .kv-last { border-bottom: none; }
+  .kv-label { font-weight: 700; }
+  .kv-value { font-weight: 500; }
+
+  .label.layout-with-importer .reps-section { height: 28.8mm; }
+  .label.layout-no-importer .reps-section { height: 44.6mm; }
+  .reps-section { overflow: hidden; display: table; width: 100%; }
+  .reps-inner { display: table-cell; vertical-align: middle; }
+  .rep-stack { width: 100%; height: 100%; }
+  .label.layout-with-importer .rep-row { height: 9.6mm; }
+  .label.layout-no-importer .rep-row { height: 14.8mm; }
+  .rep-row { width: 100%; display: table; table-layout: fixed; border-bottom: 0.8pt solid #000; }
+  .rep-row-last { border-bottom: none; }
+  .rep-badges-cell, .rep-info { display: table-cell; vertical-align: middle; }
+  .rep-badges-cell { width: 13mm; padding: 1.3pt 1.4pt 1.3pt 1.8pt; border-right: 0.95pt solid #000; vertical-align: middle; }
+  .rep-info { padding: 1.6pt 2.1pt; font-size: 5.45pt; line-height: 1.08; }
+  .rep-name { font-size: 6.3pt; font-weight: 700; line-height: 1.05; margin-bottom: 0.45pt; }
+  .rep-address { font-weight: 500; }
+  .rep-email { margin-top: 0.45pt; }
+  .badge-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .badge { border: 0.8pt solid #000; font-weight: 700; font-size: 5.6pt; padding: 1.4pt 0; text-align: center; }
+
+  .label.layout-with-importer .importer-section { height: 15mm; }
+  .importer-section { padding: 0; overflow: hidden; display: table; width: 100%; }
+  .importer-inner { display: table-cell; vertical-align: middle; padding: 1.6pt 2.3pt; }
+  .importer-block { margin-bottom: 1pt; }
+  .importer-block-last { margin-bottom: 0; }
+  .importer-title { font-size: 6pt; font-weight: 700; line-height: 1.02; }
+  .imp-line { font-size: 5pt; line-height: 1.03; margin-top: 0.2pt; }
+  .imp-inline-label { font-weight: 700; }
+  .imp-inline-value { font-weight: 600; }
+
+  .label.layout-with-importer .bottom-section { height: 17.2mm; }
+  .label.layout-no-importer .bottom-section { height: 17mm; }
+  .label.layout-no-warning.layout-with-footer .bottom-section,
+  .label.layout-with-warning.layout-no-footer .bottom-section { height: 17mm; }
+  .bottom-section { overflow: hidden; }
+  .bottom-inner { width: 100%; height: 100%; }
+  .bottom-stack { width: 100%; height: 100%; }
+  .bottom-image-area { width: 100%; height: 66.5%; padding: 0.2pt 0.9pt 0; display: table; table-layout: fixed; }
+  .bottom-image-inner { display: table-cell; vertical-align: middle; text-align: center; }
+  .bottom-warning-area { width: 100%; height: 33.5%; padding: 0.15pt 1.1pt 0.1pt; overflow: hidden; }
+  .bottom-footer-full { width: 100%; height: 100%; display: table; table-layout: fixed; }
+  .bottom-footer-full-inner { display: table-cell; vertical-align: middle; text-align: center; padding: 0.3pt 0.9pt; }
+  .bottom-warning-full { width: 100%; height: 100%; display: table; table-layout: fixed; }
+  .bottom-warning-full-inner { display: table-cell; vertical-align: middle; padding: 0.7pt 1.2pt; }
+  .warning-title { font-weight: 700; font-size: 5pt; text-transform: uppercase; margin-bottom: 0.2pt; }
+  .warning-text { font-size: 4.4pt; line-height: 1; }
+  .footer-image { display: block; width: auto; max-width: 100%; max-height: 10.8mm; margin: 0 auto; }
+  .bottom-footer-full-inner .footer-image { max-height: 15.8mm; }
+</style>
+
+<div class="label {{LAYOUT_CLASS}}">
+
+  <!-- 条码 -->
+  <div class="barcode-section section-sep">
+    <div class="barcode-holder">
+      <div class="barcode-inner"><div class="barcode-frame"><div class="barcode-frame-inner">{{BARCODE_CONTENT}}</div></div></div>
+    </div>
+  </div>
+
+  <!-- 制造商标题 + 授权代表标题 -->
+  <div class="manufacturer-section section-sep"><div class="manufacturer-inner">{{MANUFACTURER_DETAILS}}</div></div>
+  <!-- 制造商内容 + 授权代表内容 -->
+  <div class="reps-section section-sep"><div class="reps-inner">{{REPRESENTATIVES_CONTENT}}</div></div>
+
+  <!-- 进口商（C#动态生成整行） -->
+  {{IMPORTER_ROW}}
+
+  <!-- 底部：警告 + 页脚图标（C#动态生成整行） -->
+  {{BOTTOM_ROW}}
+
+</div>

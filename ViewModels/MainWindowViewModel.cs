@@ -22,6 +22,7 @@ public partial class MainWindowViewModel : ViewModelBase
     private readonly IFileService _fileService;
     private readonly IPrintService _printService;
     private readonly IDatabaseService _databaseService;
+    private readonly ILabelTemplateService _labelTemplateService;
 
     // ========== 文件列表 ==========
     
@@ -41,6 +42,15 @@ public partial class MainWindowViewModel : ViewModelBase
     /// 环保码列表
     /// </summary>
     public ObservableCollection<EcoCodeItem> EcoCodes { get; } = new();
+
+    public ObservableCollection<LabelTemplateConfig> LabelTemplates { get; } = new();
+
+    private LabelTemplateConfig? _selectedLabelTemplate;
+    public LabelTemplateConfig? SelectedLabelTemplate
+    {
+        get => _selectedLabelTemplate;
+        set => SetProperty(ref _selectedLabelTemplate, value);
+    }
     
     private EcoCodeItem? _selectedEcoCode;
     /// <summary>
@@ -180,6 +190,9 @@ public partial class MainWindowViewModel : ViewModelBase
     public ICommand ClearAllCommand { get; }
     public ICommand PrintCommand { get; }
     public ICommand SinglePagePrintCommand { get; }
+    public ICommand TemplateLabelPrintCommand { get; }
+    public ICommand CreateTemplateConfigCommand { get; }
+    public ICommand EditTemplateConfigCommand { get; }
     public ICommand OpenSettingsCommand { get; }
     public ICommand OpenHistoryCommand { get; }
     public ICommand PreviewEcoCodeCommand { get; }
@@ -195,11 +208,13 @@ public partial class MainWindowViewModel : ViewModelBase
         IFileService fileService,
         IPrintService printService,
         IDatabaseService databaseService,
+        ILabelTemplateService labelTemplateService,
         EcoCodeViewModel ecoCodeViewModel)
     {
         _fileService = fileService;
         _printService = printService;
         _databaseService = databaseService;
+        _labelTemplateService = labelTemplateService;
         EcoCodeViewModel = ecoCodeViewModel;
 
         // 初始化命令
@@ -208,6 +223,9 @@ public partial class MainWindowViewModel : ViewModelBase
         ClearAllCommand = new RelayCommand<string>(ClearAll);
         PrintCommand = new AsyncRelayCommand(PrintAsync);
         SinglePagePrintCommand = new AsyncRelayCommand(SinglePagePrintAsync);
+        TemplateLabelPrintCommand = new AsyncRelayCommand(OpenTemplateLabelPrintAsync);
+        CreateTemplateConfigCommand = new AsyncRelayCommand(CreateTemplateConfigAsync);
+        EditTemplateConfigCommand = new AsyncRelayCommand(EditTemplateConfigAsync);
         OpenSettingsCommand = new RelayCommand(OpenSettings);
         OpenHistoryCommand = new RelayCommand(OpenHistory);
         PreviewEcoCodeCommand = new AsyncRelayCommand<EcoCodeItem>(PreviewEcoCodeAsync);
@@ -318,6 +336,8 @@ public partial class MainWindowViewModel : ViewModelBase
             {
                 EcoCodes.Add(item);
             }
+
+            await LoadLabelTemplatesAsync();
 
             // 加载上次使用的平台
             var config = await _databaseService.GetConfigAsync();
@@ -783,6 +803,104 @@ public partial class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             await ShowErrorAsync($"打开单页打印失败: {ex.Message}");
+        }
+    }
+
+    private async Task OpenTemplateLabelPrintAsync()
+    {
+        try
+        {
+            if (MainOrderFiles.Count == 0)
+            {
+                await ShowErrorAsync("请先添加主单文件");
+                return;
+            }
+
+            var dialog = App.Services?.GetRequiredService<TemplateLabelPrintDialog>();
+            var viewModel = App.Services?.GetRequiredService<TemplateLabelPrintViewModel>();
+
+            if (dialog == null || viewModel == null)
+            {
+                await ShowErrorAsync("模板标签服务初始化失败");
+                return;
+            }
+
+            string? barcodePdfPath = null;
+            if (BarcodeFiles.Count > 0)
+            {
+                barcodePdfPath = BarcodeFiles[0].Path;
+            }
+
+            var firstMainOrderFile = MainOrderFiles[0];
+
+            await viewModel.InitializeAsync(firstMainOrderFile.Path, barcodePdfPath, 1);
+            viewModel.OwnerWindow = dialog;
+            dialog.DataContext = viewModel;
+            await dialog.ShowDialog(GetMainWindow());
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync($"打开模板标签打印失败: {ex.Message}");
+        }
+    }
+
+    private async Task CreateTemplateConfigAsync()
+    {
+        await OpenTemplateEditorAsync(null);
+    }
+
+    private async Task EditTemplateConfigAsync()
+    {
+        if (SelectedLabelTemplate == null)
+        {
+            await ShowErrorAsync("请先在模板配置标签页中选择模板");
+            return;
+        }
+
+        await OpenTemplateEditorAsync(SelectedLabelTemplate);
+    }
+
+    private async Task LoadLabelTemplatesAsync(string? selectedTemplateId = null)
+    {
+        var templates = await _labelTemplateService.GetTemplatesAsync();
+        LabelTemplates.Clear();
+        foreach (var template in templates)
+        {
+            LabelTemplates.Add(template);
+        }
+
+        SelectedLabelTemplate = !string.IsNullOrWhiteSpace(selectedTemplateId)
+            ? LabelTemplates.FirstOrDefault(item => string.Equals(item.Id, selectedTemplateId, StringComparison.OrdinalIgnoreCase))
+                ?? LabelTemplates.FirstOrDefault()
+            : LabelTemplates.FirstOrDefault();
+    }
+
+    private async Task OpenTemplateEditorAsync(LabelTemplateConfig? template)
+    {
+        try
+        {
+            var dialog = App.Services?.GetRequiredService<LabelTemplateEditorDialog>();
+            var viewModel = App.Services?.GetRequiredService<LabelTemplateEditorViewModel>();
+            if (dialog == null || viewModel == null)
+            {
+                await ShowErrorAsync("模板编辑器初始化失败");
+                return;
+            }
+
+            string? barcodePdfPath = BarcodeFiles.Count > 0 ? BarcodeFiles[0].Path : null;
+
+            await viewModel.InitializeAsync(template, barcodePdfPath, 1, true);
+            dialog.DataContext = viewModel;
+            await dialog.ShowDialog(GetMainWindow());
+
+            if (viewModel.SavedTemplate != null)
+            {
+                await LoadLabelTemplatesAsync(viewModel.SavedTemplate.Id);
+            }
+        }
+        catch (Exception ex)
+        {
+            await ShowErrorAsync($"打开模板编辑器失败: {ex.Message}");
         }
     }
 

@@ -161,10 +161,17 @@ public class WindowsPrintService : IPrintService
                 }
                 
                 printDoc.DefaultPageSettings.PaperSize = paperSize;
+                var bestPrinterResolution = GetBestPrinterResolution(printDoc.PrinterSettings);
+                if (bestPrinterResolution != null)
+                {
+                    printDoc.DefaultPageSettings.PrinterResolution = bestPrinterResolution;
+                    Console.WriteLine($"[PrintService] 使用打印分辨率: {bestPrinterResolution.Kind}, {bestPrinterResolution.X}x{bestPrinterResolution.Y}");
+                }
                 
                 // 设置打印机的其他属性（针对热敏打印机）
                 printDoc.DefaultPageSettings.Margins = new System.Drawing.Printing.Margins(0, 0, 0, 0);
                 printDoc.DefaultPageSettings.Landscape = false;
+                printDoc.OriginAtMargins = false;
                 
                 Console.WriteLine($"[PrintService] 纸张设置完成: {paperSize.PaperName}, {paperSize.Width}x{paperSize.Height}");
                 Console.WriteLine($"[PrintService] 边距设置: 0,0,0,0");
@@ -423,5 +430,37 @@ public class WindowsPrintService : IPrintService
         {
             return PrinterStatus.Error;
         }
+    }
+
+    private PrinterResolution? GetBestPrinterResolution(PrinterSettings settings)
+    {
+        PrinterResolution? bestResolution = null;
+        foreach (PrinterResolution resolution in settings.PrinterResolutions)
+        {
+            if (resolution.X <= 0 || resolution.Y <= 0)
+            {
+                continue;
+            }
+
+            if (bestResolution == null || resolution.X * resolution.Y > bestResolution.X * bestResolution.Y)
+            {
+                bestResolution = resolution;
+            }
+        }
+
+        if (bestResolution != null)
+        {
+            return bestResolution;
+        }
+
+        foreach (PrinterResolution resolution in settings.PrinterResolutions)
+        {
+            if (resolution.Kind == PrinterResolutionKind.High)
+            {
+                return resolution;
+            }
+        }
+
+        return null;
     }
 }
