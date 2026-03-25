@@ -105,15 +105,13 @@ public class LabelTemplateService : ILabelTemplateService
         if (string.IsNullOrWhiteSpace(template.Name)) throw new InvalidOperationException("模板名称不能为空");
 
         EnsureTemplateDirectoryInitialized();
-        var targetFilePath = System.IO.Path.Combine(GetTemplateDirectoryPath(), $"{SanitizeFileName(template.Id)}.json");
-        await File.WriteAllTextAsync(targetFilePath, JsonSerializer.Serialize(template, _jsonWriteOptions));
+        EnsureTemplateIdIsUnique(template.Id, originalFilePath);
 
-        if (!string.IsNullOrWhiteSpace(originalFilePath) &&
-            File.Exists(originalFilePath) &&
-            !string.Equals(originalFilePath, targetFilePath, StringComparison.OrdinalIgnoreCase))
-        {
-            File.Delete(originalFilePath);
-        }
+        var targetFilePath = !string.IsNullOrWhiteSpace(originalFilePath)
+            ? originalFilePath
+            : System.IO.Path.Combine(GetTemplateDirectoryPath(), $"{SanitizeFileName(template.Id)}.json");
+
+        await File.WriteAllTextAsync(targetFilePath, JsonSerializer.Serialize(template, _jsonWriteOptions));
 
         template.SourceFilePath = targetFilePath;
         return template;
@@ -521,6 +519,37 @@ public class LabelTemplateService : ILabelTemplateService
         template.ImporterInfo ??= new LabelImporterInfo();
         template.FooterImageFileName = string.IsNullOrWhiteSpace(template.FooterImageFileName) ? "环保标识.png" : template.FooterImageFileName;
         return template;
+    }
+
+    private void EnsureTemplateIdIsUnique(string templateId, string? originalFilePath)
+    {
+        var templateDirectory = GetTemplateDirectoryPath();
+        foreach (var filePath in Directory.GetFiles(templateDirectory, "*.json", SearchOption.TopDirectoryOnly))
+        {
+            if (!string.IsNullOrWhiteSpace(originalFilePath) &&
+                string.Equals(filePath, originalFilePath, StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            try
+            {
+                var json = File.ReadAllText(filePath);
+                var existingTemplate = ParseTemplate(json);
+                if (existingTemplate != null &&
+                    string.Equals(existingTemplate.Id, templateId, StringComparison.OrdinalIgnoreCase))
+                {
+                    throw new InvalidOperationException($"模板 ID 已存在: {templateId}");
+                }
+            }
+            catch (InvalidOperationException)
+            {
+                throw;
+            }
+            catch
+            {
+            }
+        }
     }
 
     private void EnsureTemplateDirectoryInitialized()

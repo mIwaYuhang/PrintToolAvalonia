@@ -8,7 +8,7 @@
         x:Class="PrintToolAvalonia.Views.TemplateLabelPrintDialog"
         x:DataType="vm:TemplateLabelPrintViewModel"
         Title="模板标签打印"
-        Width="980"
+        Width="1120"
         Height="760"
         WindowStartupLocation="CenterOwner"
         CanResize="True">
@@ -89,7 +89,7 @@
         </Grid>
 
         <Border Grid.Row="2" Classes="card" Padding="15">
-            <Grid ColumnDefinitions="340,*" ColumnSpacing="15">
+            <Grid ColumnDefinitions="420,*" ColumnSpacing="15">
                 <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" RowSpacing="12">
                     <StackPanel Grid.Row="0" Spacing="4">
                         <TextBlock Text="主单当前页" Classes="section-title"/>
@@ -101,12 +101,22 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Background="White">
-                        <Grid>
+                        <Grid ClipToBounds="True">
                             <ScrollViewer HorizontalScrollBarVisibility="Auto"
-                                         VerticalScrollBarVisibility="Auto">
-                                <Image Source="{Binding CurrentMainOrderImage}"
-                                      Stretch="Uniform"
-                                      IsVisible="{Binding !IsLoadingMainOrderPage}"/>
+                                          VerticalScrollBarVisibility="Auto"
+                                          IsVisible="{Binding !IsLoadingMainOrderPage}">
+                                <Grid HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      MinWidth="388"
+                                      MinHeight="300">
+                                    <Border Width="{Binding MainOrderPreviewDisplayWidth}"
+                                            Height="{Binding MainOrderPreviewDisplayHeight}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center">
+                                        <Image Source="{Binding CurrentMainOrderImage}"
+                                               Stretch="Fill"/>
+                                    </Border>
+                                </Grid>
                             </ScrollViewer>
 
                             <Border Background="#80000000"
@@ -120,28 +130,58 @@
                         </Grid>
                     </Border>
 
-                    <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
-                        <Button Grid.Column="0"
-                                Content="上一页"
-                                Command="{Binding PreviousMainOrderPageCommand}"
-                                Classes="secondary"
-                                MinWidth="90"/>
-                        <TextBlock Grid.Column="1"
-                                  HorizontalAlignment="Center"
-                                  VerticalAlignment="Center"
-                                  FontWeight="SemiBold">
-                            <Run Text="第 "/>
-                            <Run Text="{Binding CurrentMainOrderPage}"/>
-                            <Run Text=" 页 / 共 "/>
-                            <Run Text="{Binding MainOrderTotalPages}"/>
-                            <Run Text=" 页"/>
-                        </TextBlock>
-                        <Button Grid.Column="2"
-                                Content="下一页"
-                                Command="{Binding NextMainOrderPageCommand}"
-                                Classes="secondary"
-                                MinWidth="90"/>
-                    </Grid>
+                    <StackPanel Grid.Row="2" Spacing="8">
+                        <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8">
+                            <Button Grid.Column="0"
+                                    Content="缩小"
+                                    Command="{Binding ZoomOutMainOrderPreviewCommand}"
+                                    Classes="secondary"
+                                    MinWidth="72"/>
+                            <TextBlock Grid.Column="1"
+                                      Text="{Binding MainOrderPreviewZoomText}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      FontWeight="SemiBold"/>
+                            <Button Grid.Column="2"
+                                    Content="100%"
+                                    Command="{Binding ResetMainOrderPreviewZoomCommand}"
+                                    Classes="secondary"
+                                    MinWidth="72"/>
+                            <Button Grid.Column="3"
+                                    Content="放大"
+                                    Command="{Binding ZoomInMainOrderPreviewCommand}"
+                                    Classes="secondary"
+                                    MinWidth="72"/>
+                            <TextBlock Grid.Column="4"
+                                      Text="拖动滚动条可查看放大区域"
+                                      Classes="secondary"
+                                      VerticalAlignment="Center"
+                                      TextWrapping="Wrap"/>
+                        </Grid>
+
+                        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+                            <Button Grid.Column="0"
+                                    Content="上一页"
+                                    Command="{Binding PreviousMainOrderPageCommand}"
+                                    Classes="secondary"
+                                    MinWidth="90"/>
+                            <TextBlock Grid.Column="1"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center"
+                                      FontWeight="SemiBold">
+                                <Run Text="第 "/>
+                                <Run Text="{Binding CurrentMainOrderPage}"/>
+                                <Run Text=" 页 / 共 "/>
+                                <Run Text="{Binding MainOrderTotalPages}"/>
+                                <Run Text=" 页"/>
+                            </TextBlock>
+                            <Button Grid.Column="2"
+                                    Content="下一页"
+                                    Command="{Binding NextMainOrderPageCommand}"
+                                    Classes="secondary"
+                                    MinWidth="90"/>
+                        </Grid>
+                    </StackPanel>
                 </Grid>
 
                 <Grid Grid.Column="1" RowDefinitions="Auto,*,Auto" RowSpacing="12">

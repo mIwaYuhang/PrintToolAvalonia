@@ -17,6 +17,10 @@ namespace PrintToolAvalonia.ViewModels;
 
 public partial class TemplateLabelPrintViewModel : ViewModelBase
 {
+    private const double MainOrderPreviewViewportWidth = 388d;
+    private const double MainOrderPreviewViewportHeight = 300d;
+    private const double MainOrderPreviewZoomStep = 1.25d;
+    private const double MainOrderPreviewMaxZoom = 4d;
     private readonly IFileService _fileService;
     private readonly IPdfRenderService _pdfRenderService;
     private readonly ILabelTemplateService _labelTemplateService;
@@ -27,6 +31,7 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
 
     private readonly List<BarcodeGroup> _barcodeGroups = new();
     private string _mainOrderPdfPath = string.Empty;
+    private double _mainOrderPreviewBaseScale = 1d;
 
     public Window? OwnerWindow { get; set; }
 
@@ -64,7 +69,20 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
     [ObservableProperty]
     private Bitmap? _currentMainOrderImage;
 
+    [ObservableProperty]
+    private double _mainOrderPreviewZoom = 1d;
+
     public int TotalLabelCount => QueueItems.Sum(item => item.LabelCount);
+
+    public double MainOrderPreviewDisplayWidth => CurrentMainOrderImage == null
+        ? 0
+        : CurrentMainOrderImage.PixelSize.Width * _mainOrderPreviewBaseScale * MainOrderPreviewZoom;
+
+    public double MainOrderPreviewDisplayHeight => CurrentMainOrderImage == null
+        ? 0
+        : CurrentMainOrderImage.PixelSize.Height * _mainOrderPreviewBaseScale * MainOrderPreviewZoom;
+
+    public string MainOrderPreviewZoomText => $"{Math.Round(MainOrderPreviewZoom * 100):0}%";
 
     public string MainOrderFileName => string.IsNullOrWhiteSpace(_mainOrderPdfPath)
         ? "未加载主单"
@@ -96,6 +114,24 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         _databaseService = databaseService;
 
         QueueItems.CollectionChanged += OnQueueItemsChanged;
+    }
+
+    partial void OnCurrentMainOrderImageChanged(Bitmap? value)
+    {
+        RecalculateMainOrderPreviewBaseScale();
+        MainOrderPreviewZoom = 1d;
+        NotifyMainOrderPreviewChanged();
+        ZoomInMainOrderPreviewCommand.NotifyCanExecuteChanged();
+        ZoomOutMainOrderPreviewCommand.NotifyCanExecuteChanged();
+        ResetMainOrderPreviewZoomCommand.NotifyCanExecuteChanged();
+    }
+
+    partial void OnMainOrderPreviewZoomChanged(double value)
+    {
+        NotifyMainOrderPreviewChanged();
+        ZoomInMainOrderPreviewCommand.NotifyCanExecuteChanged();
+        ZoomOutMainOrderPreviewCommand.NotifyCanExecuteChanged();
+        ResetMainOrderPreviewZoomCommand.NotifyCanExecuteChanged();
     }
 
     public async Task InitializeAsync(string mainOrderPdfPath, string? initialBarcodePdfPath = null, int initialPage = 1)
@@ -228,6 +264,24 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
 
         CurrentMainOrderPage++;
         await LoadMainOrderPageAsync(CurrentMainOrderPage);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanZoomOutMainOrderPreview))]
+    private void ZoomOutMainOrderPreview()
+    {
+        MainOrderPreviewZoom = Math.Max(1d, MainOrderPreviewZoom / MainOrderPreviewZoomStep);
+    }
+
+    [RelayCommand(CanExecute = nameof(CanResetMainOrderPreviewZoom))]
+    private void ResetMainOrderPreviewZoom()
+    {
+        MainOrderPreviewZoom = 1d;
+    }
+
+    [RelayCommand(CanExecute = nameof(CanZoomInMainOrderPreview))]
+    private void ZoomInMainOrderPreview()
+    {
+        MainOrderPreviewZoom = Math.Min(MainOrderPreviewMaxZoom, MainOrderPreviewZoom * MainOrderPreviewZoomStep);
     }
 
     [RelayCommand(CanExecute = nameof(CanPrint))]
@@ -550,6 +604,43 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         {
             IsScanningBarcode = false;
         }
+    }
+
+    private bool CanZoomInMainOrderPreview()
+    {
+        return CurrentMainOrderImage != null && MainOrderPreviewZoom < MainOrderPreviewMaxZoom;
+    }
+
+    private bool CanZoomOutMainOrderPreview()
+    {
+        return CurrentMainOrderImage != null && MainOrderPreviewZoom > 1d;
+    }
+
+    private bool CanResetMainOrderPreviewZoom()
+    {
+        return CurrentMainOrderImage != null && Math.Abs(MainOrderPreviewZoom - 1d) > 0.001d;
+    }
+
+    private void RecalculateMainOrderPreviewBaseScale()
+    {
+        if (CurrentMainOrderImage == null ||
+            CurrentMainOrderImage.PixelSize.Width <= 0 ||
+            CurrentMainOrderImage.PixelSize.Height <= 0)
+        {
+            _mainOrderPreviewBaseScale = 1d;
+            return;
+        }
+
+        var widthScale = MainOrderPreviewViewportWidth / CurrentMainOrderImage.PixelSize.Width;
+        var heightScale = MainOrderPreviewViewportHeight / CurrentMainOrderImage.PixelSize.Height;
+        _mainOrderPreviewBaseScale = Math.Min(widthScale, heightScale);
+    }
+
+    private void NotifyMainOrderPreviewChanged()
+    {
+        OnPropertyChanged(nameof(MainOrderPreviewDisplayWidth));
+        OnPropertyChanged(nameof(MainOrderPreviewDisplayHeight));
+        OnPropertyChanged(nameof(MainOrderPreviewZoomText));
     }
 
     private async Task ShowErrorAsync(string message)
