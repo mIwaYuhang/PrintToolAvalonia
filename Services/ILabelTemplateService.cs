@@ -16,8 +16,9 @@ public interface ILabelTemplateService
 
     Task<string> GeneratePreviewPdfAsync(string templateJson, string? barcodePdfPath, int? barcodePageNumber, bool includeImporterInfo);
 
-    Task<string> GeneratePdfAsync(
+    Task<string> GenerateLabelPdfAsync(
         LabelTemplateConfig template,
-        IReadOnlyList<TemplateLabelQueueItem> queueItems,
+        string barcodePdfPath,
+        int barcodePageNumber,
         bool includeImporterInfo);
 }

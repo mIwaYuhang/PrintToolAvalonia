@@ -210,14 +210,32 @@
                                         <Border BorderBrush="#F0F2F5"
                                                 BorderThickness="0,0,0,1"
                                                 Padding="12">
-                                            <Grid ColumnDefinitions="2*,*,Auto" ColumnSpacing="10">
+                                            <Grid ColumnDefinitions="2*,1.3*,Auto" ColumnSpacing="10">
                                                 <StackPanel Grid.Column="0" Spacing="4">
                                                     <TextBlock Text="{Binding SourceFileName}" FontWeight="SemiBold"/>
                                                     <TextBlock Text="{Binding GroupDisplay, StringFormat='分组范围：{0}'}" Classes="secondary"/>
+                                                    <TextBlock Text="{Binding PrintStatusDisplay, StringFormat='打印状态：{0}'}" Classes="secondary"/>
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Spacing="4">
                                                     <TextBlock Text="{Binding TemplateName, StringFormat='模板：{0}'}"/>
-                                                    <TextBlock Text="{Binding LabelCount, StringFormat='标签数量：{0}'}" Classes="secondary"/>
+                                                    <TextBlock Text="{Binding LabelCount, StringFormat='首打数量：{0}'}" Classes="secondary"/>
+                                                    <Grid ColumnDefinitions="Auto,90,Auto" ColumnSpacing="8">
+                                                        <TextBlock Grid.Column="0"
+                                                                  Text="补打数量："
+                                                                  VerticalAlignment="Center"
+                                                                  Classes="secondary"/>
+                                                        <NumericUpDown Grid.Column="1"
+                                                                      Value="{Binding ReprintCount}"
+                                                                      Minimum="0"
+                                                                      Maximum="999"
+                                                                      Increment="1"
+                                                                      FormatString="0"
+                                                                      IsEnabled="{Binding IsBasePrintCompleted}"/>
+                                                        <TextBlock Grid.Column="2"
+                                                                  Text="张"
+                                                                  VerticalAlignment="Center"
+                                                                  Classes="secondary"/>
+                                                    </Grid>
                                                 </StackPanel>
                                                 <Button Grid.Column="2"
                                                         Content="删除"
@@ -251,7 +269,7 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12">
-                        <TextBlock Text="说明：每个条码页会生成 1 张 100x100 模板标签，条码内容会直接合并进模板；点击打印时会先打印左侧当前主单页。"
+                        <TextBlock Text="说明：每个条码分组只取首条条码，按组内数量生成 100x100 模板标签；点击“生成并打印”时会先打印左侧当前主单页，点击“补打模板标签”只补打模板标签。"
                                    Classes="secondary"
                                    TextWrapping="Wrap"/>
                     </Border>
@@ -259,7 +277,7 @@
             </Grid>
         </Border>
 
-        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10" Margin="0,15,0,0">
+        <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" Margin="0,15,0,0">
             <TextBlock Grid.Column="0"
                       Text="{Binding StatusMessage}"
                       VerticalAlignment="Center"
@@ -271,6 +289,18 @@
                     MinWidth="100"
                     Click="OnCloseClick"/>
             <Button Grid.Column="2"
+                    Command="{Binding ReprintCommand}"
+                    Classes="secondary"
+                    MinWidth="140"
+                    IsEnabled="{Binding !IsPrinting}">
+                <Button.Content>
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                        <TextBlock Text="补打模板标签" IsVisible="{Binding !IsPrinting}"/>
+                        <TextBlock Text="打印中..." IsVisible="{Binding IsPrinting}"/>
+                    </StackPanel>
+                </Button.Content>
+            </Button>
+            <Button Grid.Column="3"
                     Command="{Binding PrintCommand}"
                     Classes="accent"
                     MinWidth="140"

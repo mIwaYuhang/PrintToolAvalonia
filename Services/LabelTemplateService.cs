@@ -127,18 +127,19 @@ public class LabelTemplateService : ILabelTemplateService
         return await GeneratePdfFileAsync(template, previewSource, includeImporterInfo, true);
     }
 
-    public async Task<string> GeneratePdfAsync(
+    public async Task<string> GenerateLabelPdfAsync(
         LabelTemplateConfig template,
-        IReadOnlyList<TemplateLabelQueueItem> queueItems,
+        string barcodePdfPath,
+        int barcodePageNumber,
         bool includeImporterInfo)
     {
         if (template == null) throw new ArgumentNullException(nameof(template));
-        if (queueItems.Count == 0) throw new InvalidOperationException("请先添加要打印的条码分组");
+        if (string.IsNullOrWhiteSpace(barcodePdfPath)) throw new InvalidOperationException("条码 PDF 路径不能为空");
 
-        var labelSources = queueItems
-            .SelectMany(item => Enumerable.Range(item.BarcodeGroup.StartPage, item.BarcodeGroup.BarcodeCount)
-                .Select(pageNumber => (BarcodePdfPath: (string?)item.BarcodePdfPath, BarcodePageNumber: (int?)pageNumber)))
-            .ToList();
+        var labelSources = new List<(string? BarcodePdfPath, int? BarcodePageNumber)>
+        {
+            (barcodePdfPath, barcodePageNumber)
+        };
 
         return await GeneratePdfFileAsync(template, labelSources, includeImporterInfo, false);
     }

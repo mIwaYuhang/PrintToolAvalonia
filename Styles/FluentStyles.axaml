@@ -199,6 +199,20 @@
         <Setter Property="BorderThickness" Value="2"/>
     </Style>
 
+    <Style Selector="NumericUpDown">
+        <Setter Property="CornerRadius" Value="4"/>
+        <Setter Property="Padding" Value="10,8"/>
+        <Setter Property="BorderThickness" Value="1"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderColor}"/>
+        <Setter Property="Background" Value="White"/>
+        <Setter Property="MinHeight" Value="36"/>
+    </Style>
+
+    <Style Selector="NumericUpDown:focus">
+        <Setter Property="BorderBrush" Value="{DynamicResource AccentColor}"/>
+        <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+
     <!-- 下拉框样式 -->
     <Style Selector="ComboBox">
         <Setter Property="CornerRadius" Value="4"/>

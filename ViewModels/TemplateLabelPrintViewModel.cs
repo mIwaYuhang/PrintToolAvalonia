@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -72,7 +73,11 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
     [ObservableProperty]
     private double _mainOrderPreviewZoom = 1d;
 
-    public int TotalLabelCount => QueueItems.Sum(item => item.LabelCount);
+    public int TotalLabelCount => QueueItems.Where(item => !item.IsBasePrintCompleted).Sum(item => item.LabelCount);
+
+    public int TotalReprintCount => QueueItems.Sum(item => Math.Max(0, item.ReprintCount));
+
+    public int PendingBasePrintGroupCount => QueueItems.Count(item => !item.IsBasePrintCompleted);
 
     public double MainOrderPreviewDisplayWidth => CurrentMainOrderImage == null
         ? 0
@@ -94,7 +99,13 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
 
     public string QueueSummary => QueueItems.Count == 0
         ? "待打印队列为空"
-        : $"已加入 {QueueItems.Count} 个分组，共 {TotalLabelCount} 张标签";
+        : PendingBasePrintGroupCount == 0
+            ? TotalReprintCount > 0
+                ? $"当前队列已完成首打，待补打 {TotalReprintCount} 张"
+                : "当前队列已完成首打，可按需填写补打数量"
+        : TotalReprintCount > 0
+            ? $"待首打 {PendingBasePrintGroupCount} 个分组，共 {TotalLabelCount} 张标签；待补打 {TotalReprintCount} 张"
+            : $"待首打 {PendingBasePrintGroupCount} 个分组，共 {TotalLabelCount} 张标签";
 
     public TemplateLabelPrintViewModel(
         IFileService fileService,
@@ -195,7 +206,8 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             {
                 BarcodePdfPath = BarcodePdfPath,
                 BarcodeGroup = viewModel.Result,
-                TemplateName = SelectedTemplateConfig.Name
+                TemplateName = SelectedTemplateConfig.Name,
+                IsBasePrintCompleted = viewModel.Result.IsPrinted
             });
 
             StatusMessage = $"已加入分组：第{viewModel.Result.StartPage}-{viewModel.Result.EndPage}页";
@@ -293,16 +305,18 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             return;
         }
 
-        if (QueueItems.Count == 0)
+        var pendingItems = QueueItems.Where(item => !item.IsBasePrintCompleted).ToList();
+        if (pendingItems.Count == 0)
         {
-            await ShowErrorAsync("请先添加要打印的条码分组");
+            await ShowErrorAsync("当前队列没有待首打分组，请设置补打数量后使用补打模板标签");
             return;
         }
 
         try
         {
             IsPrinting = true;
-            StatusMessage = "正在生成模板 PDF...";
+            StatusMessage = "正在生成模板打印任务...";
+            var pendingLabelCount = pendingItems.Sum(item => item.LabelCount);
 
             var config = await _databaseService.GetConfigAsync();
             if (string.IsNullOrWhiteSpace(config.MainOrderPrinter.PrinterName))
@@ -316,13 +330,6 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 await ShowErrorAsync("请先在设置中配置主单打印机纸张尺寸");
                 return;
             }
-
-            var pdfPath = await _labelTemplateService.GeneratePdfAsync(
-                SelectedTemplateConfig,
-                QueueItems.ToList(),
-                IncludeImporterInfo);
-
-            StatusMessage = "模板 PDF 已生成，正在先打印当前主单页，再打印模板标签...";
 
             var jobs = new List<PrintJob>
             {
@@ -338,33 +345,31 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                         PageRange = $"{CurrentMainOrderPage}"
                     },
                     Description = $"主单第{CurrentMainOrderPage}页"
-                },
-                new()
-                {
-                    Options = new PrintOptions
-                    {
-                        FilePath = pdfPath,
-                        PrinterName = config.MainOrderPrinter.PrinterName,
-                        PaperWidthMm = 100,
-                        PaperHeightMm = 100,
-                        Copies = 1
-                    },
-                    Description = $"模板标签: {SelectedTemplateConfig.Name}"
                 }
             };
+
+            jobs.AddRange(await CreateTemplateLabelJobsAsync(
+                SelectedTemplateConfig,
+                pendingItems,
+                item => item.LabelCount,
+                IncludeImporterInfo,
+                config.MainOrderPrinter.PrinterName,
+                "模板标签"));
+
+            StatusMessage = "模板打印任务已生成，正在先打印当前主单页，再打印模板标签...";
 
             var result = await _printService.PrintBatchAsync(jobs);
 
             if (result.FailedCount == 0)
             {
-                foreach (var item in QueueItems)
+                foreach (var item in pendingItems)
                 {
                     _barcodeGroupService.MarkAsPrinted(item.BarcodeGroup.Id);
+                    item.IsBasePrintCompleted = true;
                 }
 
-                StatusMessage = $"打印完成，共输出 {TotalLabelCount} 张标签";
-                await ShowInfoAsync(StatusMessage);
-                QueueItems.Clear();
+                StatusMessage = $"首打完成，共输出 {pendingLabelCount} 张标签";
+                await ShowInfoAsync($"{StatusMessage}。如需补打，请在队列中填写补打数量后点击“补打模板标签”。");
             }
             else
             {
@@ -386,9 +391,97 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         }
     }
 
+    [RelayCommand(CanExecute = nameof(CanReprint))]
+    private async Task ReprintAsync()
+    {
+        if (SelectedTemplateConfig == null)
+        {
+            await ShowErrorAsync("请先选择模板");
+            return;
+        }
+
+        var reprintItems = QueueItems.Where(item => item.ReprintCount > 0).ToList();
+        if (reprintItems.Count == 0)
+        {
+            await ShowErrorAsync("请先设置补打数量");
+            return;
+        }
+
+        try
+        {
+            IsPrinting = true;
+            StatusMessage = "正在生成补打打印任务...";
+            var reprintLabelCount = reprintItems.Sum(item => item.ReprintCount);
+
+            var config = await _databaseService.GetConfigAsync();
+            if (string.IsNullOrWhiteSpace(config.MainOrderPrinter.PrinterName))
+            {
+                await ShowErrorAsync("请先在设置中配置主单打印机");
+                return;
+            }
+
+            if (config.MainOrderPrinter.PaperWidthMm <= 0 || config.MainOrderPrinter.PaperHeightMm <= 0)
+            {
+                await ShowErrorAsync("请先在设置中配置主单打印机纸张尺寸");
+                return;
+            }
+
+            var jobs = await CreateTemplateLabelJobsAsync(
+                SelectedTemplateConfig,
+                reprintItems,
+                item => item.ReprintCount,
+                IncludeImporterInfo,
+                config.MainOrderPrinter.PrinterName,
+                "模板标签补打");
+
+            StatusMessage = "补打打印任务已生成，正在打印模板标签...";
+
+            var result = await _printService.PrintBatchAsync(jobs);
+
+            if (result.FailedCount == 0)
+            {
+                foreach (var item in reprintItems)
+                {
+                    item.ReprintCount = 0;
+                }
+
+                StatusMessage = $"补打完成，共输出 {reprintLabelCount} 张标签";
+                await ShowInfoAsync(StatusMessage);
+            }
+            else
+            {
+                var message = string.Join(
+                    Environment.NewLine,
+                    result.FailedJobs.Select(job => $"- {job.Job.Description}: {job.Error}").Take(5));
+                await ShowErrorAsync($"补打失败：{Environment.NewLine}{message}");
+                StatusMessage = "补打失败";
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "补打失败";
+            await ShowErrorAsync($"模板标签补打失败: {ex.Message}");
+        }
+        finally
+        {
+            IsPrinting = false;
+        }
+    }
+
     private bool CanPrint()
     {
-        return !IsPrinting && !IsLoadingMainOrderPage && SelectedTemplateConfig != null && QueueItems.Count > 0 && !string.IsNullOrWhiteSpace(_mainOrderPdfPath);
+        return !IsPrinting &&
+               !IsLoadingMainOrderPage &&
+               SelectedTemplateConfig != null &&
+               QueueItems.Any(item => !item.IsBasePrintCompleted) &&
+               !string.IsNullOrWhiteSpace(_mainOrderPdfPath);
+    }
+
+    private bool CanReprint()
+    {
+        return !IsPrinting &&
+               SelectedTemplateConfig != null &&
+               QueueItems.Any(item => item.ReprintCount > 0);
     }
 
     private bool CanGoPreviousMainOrderPage()
@@ -410,6 +503,7 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
 
         OnPropertyChanged(nameof(QueueSummary));
         PrintCommand.NotifyCanExecuteChanged();
+        ReprintCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnIsPrintingChanged(bool value)
@@ -417,6 +511,7 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         PreviousMainOrderPageCommand.NotifyCanExecuteChanged();
         NextMainOrderPageCommand.NotifyCanExecuteChanged();
         PrintCommand.NotifyCanExecuteChanged();
+        ReprintCommand.NotifyCanExecuteChanged();
     }
 
     partial void OnIsLoadingMainOrderPageChanged(bool value)
@@ -439,9 +534,83 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
 
     private void OnQueueItemsChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
+        if (e.OldItems != null)
+        {
+            foreach (var item in e.OldItems.OfType<TemplateLabelQueueItem>())
+            {
+                item.PropertyChanged -= OnQueueItemPropertyChanged;
+            }
+        }
+
+        if (e.NewItems != null)
+        {
+            foreach (var item in e.NewItems.OfType<TemplateLabelQueueItem>())
+            {
+                item.PropertyChanged += OnQueueItemPropertyChanged;
+            }
+        }
+
+        NotifyQueueStateChanged();
+    }
+
+    private void OnQueueItemPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(TemplateLabelQueueItem.ReprintCount) ||
+            e.PropertyName == nameof(TemplateLabelQueueItem.IsBasePrintCompleted))
+        {
+            NotifyQueueStateChanged();
+        }
+    }
+
+    private void NotifyQueueStateChanged()
+    {
         OnPropertyChanged(nameof(TotalLabelCount));
+        OnPropertyChanged(nameof(TotalReprintCount));
+        OnPropertyChanged(nameof(PendingBasePrintGroupCount));
         OnPropertyChanged(nameof(QueueSummary));
         PrintCommand.NotifyCanExecuteChanged();
+        ReprintCommand.NotifyCanExecuteChanged();
+    }
+
+    private async Task<List<PrintJob>> CreateTemplateLabelJobsAsync(
+        LabelTemplateConfig template,
+        IEnumerable<TemplateLabelQueueItem> queueItems,
+        Func<TemplateLabelQueueItem, int> copySelector,
+        bool includeImporterInfo,
+        string printerName,
+        string descriptionPrefix)
+    {
+        var jobs = new List<PrintJob>();
+
+        foreach (var item in queueItems)
+        {
+            var copies = Math.Max(0, copySelector(item));
+            if (copies == 0)
+            {
+                continue;
+            }
+
+            var pdfPath = await _labelTemplateService.GenerateLabelPdfAsync(
+                template,
+                item.BarcodePdfPath,
+                item.BarcodeGroup.StartPage,
+                includeImporterInfo);
+
+            jobs.Add(new PrintJob
+            {
+                Options = new PrintOptions
+                {
+                    FilePath = pdfPath,
+                    PrinterName = printerName,
+                    PaperWidthMm = 100,
+                    PaperHeightMm = 100,
+                    Copies = copies
+                },
+                Description = $"{descriptionPrefix}: {template.Name} 第{item.BarcodeGroup.StartPage}-{item.BarcodeGroup.EndPage}页 ({copies}份)"
+            });
+        }
+
+        return jobs;
     }
 
     private async Task LoadTemplatesAsync()
