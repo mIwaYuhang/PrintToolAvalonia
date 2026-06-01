@@ -48,6 +48,28 @@ public interface IDatabaseService
     /// </summary>
     Task DeleteEcoCodeAsync(string id);
     
+    // ========== 商品名称管理 ==========
+
+    /// <summary>
+    /// 获取所有商品名称
+    /// </summary>
+    Task<List<ProductNameItem>> GetAllProductNamesAsync();
+
+    /// <summary>
+    /// 添加商品名称
+    /// </summary>
+    Task<ProductNameItem> AddProductNameAsync(ProductNameItem item);
+
+    /// <summary>
+    /// 更新商品名称
+    /// </summary>
+    Task UpdateProductNameAsync(string id, ProductNameItem item);
+
+    /// <summary>
+    /// 删除商品名称
+    /// </summary>
+    Task DeleteProductNameAsync(string id);
+
     // ========== 打印历史管理 ==========
     
     /// <summary>

@@ -84,6 +84,18 @@
                     <TextBlock Text="{Binding StatusMessage}"
                                Classes="secondary"
                                TextWrapping="Wrap"/>
+                    <!-- 希音平台商品名称提示 -->
+                    <Border Background="#FDF6EC"
+                            BorderBrush="#E6A23C"
+                            BorderThickness="1"
+                            CornerRadius="4"
+                            Padding="8"
+                            IsVisible="{Binding IsSheinPlatform}">
+                        <TextBlock Text='提示：添加分组后，请在队列项中填写商品名称（中文查看用，英文打印用）。可在主界面"商品名称"标签页预先添加常用商品。'
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Foreground="#E6A23C"/>
+                    </Border>
                 </StackPanel>
             </Border>
         </Grid>
@@ -203,51 +215,90 @@
                             BorderThickness="1"
                             CornerRadius="6">
                         <Grid>
-                            <ListBox ItemsSource="{Binding QueueItems}"
-                                     IsVisible="{Binding QueueItems.Count}">
-                                <ListBox.ItemTemplate>
+                            <ScrollViewer IsVisible="{Binding QueueItems.Count}">
+                            <ItemsControl ItemsSource="{Binding QueueItems}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <StackPanel/>
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border BorderBrush="#F0F2F5"
                                                 BorderThickness="0,0,0,1"
                                                 Padding="12">
-                                            <Grid ColumnDefinitions="2*,1.3*,Auto" ColumnSpacing="10">
-                                                <StackPanel Grid.Column="0" Spacing="4">
-                                                    <TextBlock Text="{Binding SourceFileName}" FontWeight="SemiBold"/>
-                                                    <TextBlock Text="{Binding GroupDisplay, StringFormat='分组范围：{0}'}" Classes="secondary"/>
-                                                    <TextBlock Text="{Binding PrintStatusDisplay, StringFormat='打印状态：{0}'}" Classes="secondary"/>
-                                                </StackPanel>
-                                                <StackPanel Grid.Column="1" Spacing="4">
-                                                    <TextBlock Text="{Binding TemplateName, StringFormat='模板：{0}'}"/>
-                                                    <TextBlock Text="{Binding LabelCount, StringFormat='首打数量：{0}'}" Classes="secondary"/>
-                                                    <Grid ColumnDefinitions="Auto,90,Auto" ColumnSpacing="8">
+                                            <StackPanel Spacing="8">
+                                                <Grid ColumnDefinitions="2*,1.3*,Auto" ColumnSpacing="10">
+                                                    <StackPanel Grid.Column="0" Spacing="4">
+                                                        <TextBlock Text="{Binding SourceFileName}" FontWeight="SemiBold"/>
+                                                        <TextBlock Text="{Binding GroupDisplay, StringFormat='分组范围：{0}'}" Classes="secondary"/>
+                                                        <TextBlock Text="{Binding PrintStatusDisplay, StringFormat='打印状态：{0}'}" Classes="secondary"/>
+                                                    </StackPanel>
+                                                    <StackPanel Grid.Column="1" Spacing="4">
+                                                        <TextBlock Text="{Binding TemplateName, StringFormat='模板：{0}'}"/>
+                                                        <TextBlock Text="{Binding LabelCount, StringFormat='首打数量：{0}'}" Classes="secondary"/>
+                                                        <Grid ColumnDefinitions="Auto,90,Auto" ColumnSpacing="8">
+                                                            <TextBlock Grid.Column="0"
+                                                                      Text="补打数量："
+                                                                      VerticalAlignment="Center"
+                                                                      Classes="secondary"/>
+                                                            <NumericUpDown Grid.Column="1"
+                                                                          Value="{Binding ReprintCount}"
+                                                                          Minimum="0"
+                                                                          Maximum="999"
+                                                                          Increment="1"
+                                                                          FormatString="0"
+                                                                          IsEnabled="{Binding IsBasePrintCompleted}"/>
+                                                            <TextBlock Grid.Column="2"
+                                                                      Text="张"
+                                                                      VerticalAlignment="Center"
+                                                                      Classes="secondary"/>
+                                                        </Grid>
+                                                    </StackPanel>
+                                                    <Button Grid.Column="2"
+                                                            Content="删除"
+                                                            Command="{Binding $parent[Window].DataContext.RemoveQueueItemCommand}"
+                                                            CommandParameter="{Binding}"
+                                                            Classes="danger"
+                                                            MinWidth="80"/>
+                                                </Grid>
+                                                <!-- 商品名称行（希音平台显示） -->
+                                                <Border Background="#F5F7FA"
+                                                        CornerRadius="4"
+                                                        Padding="8,6"
+                                                        IsVisible="{Binding $parent[Window].DataContext.IsSheinPlatform}">
+                                                    <Grid ColumnDefinitions="Auto,*,Auto,*" ColumnSpacing="8">
                                                         <TextBlock Grid.Column="0"
-                                                                  Text="补打数量："
+                                                                  Text="选择商品："
                                                                   VerticalAlignment="Center"
-                                                                  Classes="secondary"/>
-                                                        <NumericUpDown Grid.Column="1"
-                                                                      Value="{Binding ReprintCount}"
-                                                                      Minimum="0"
-                                                                      Maximum="999"
-                                                                      Increment="1"
-                                                                      FormatString="0"
-                                                                      IsEnabled="{Binding IsBasePrintCompleted}"/>
+                                                                  FontSize="12"/>
+                                                        <ComboBox Grid.Column="1"
+                                                                 ItemsSource="{Binding $parent[Window].DataContext.ProductNameItems}"
+                                                                 SelectedItem="{Binding SelectedProductNameItem}"
+                                                                 PlaceholderText="选择已保存商品"
+                                                                 MinWidth="140">
+                                                            <ComboBox.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <TextBlock Text="{Binding DisplayName}"/>
+                                                                </DataTemplate>
+                                                            </ComboBox.ItemTemplate>
+                                                        </ComboBox>
                                                         <TextBlock Grid.Column="2"
-                                                                  Text="张"
+                                                                  Text="打印名称："
                                                                   VerticalAlignment="Center"
-                                                                  Classes="secondary"/>
+                                                                  FontSize="12"/>
+                                                        <TextBox Grid.Column="3"
+                                                                Text="{Binding ProductNameEnglish}"
+                                                                Watermark="英文名（打印到标签）"
+                                                                FontSize="12"/>
                                                     </Grid>
-                                                </StackPanel>
-                                                <Button Grid.Column="2"
-                                                        Content="删除"
-                                                        Command="{Binding $parent[Window].DataContext.RemoveQueueItemCommand}"
-                                                        CommandParameter="{Binding}"
-                                                        Classes="danger"
-                                                        MinWidth="80"/>
-                                            </Grid>
+                                                </Border>
+                                            </StackPanel>
                                         </Border>
                                     </DataTemplate>
-                                </ListBox.ItemTemplate>
-                            </ListBox>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            </ScrollViewer>
 
                             <StackPanel HorizontalAlignment="Center"
                                        VerticalAlignment="Center"

@@ -26,6 +26,7 @@ public partial class SinglePagePrintViewModel : ViewModelBase
     private string _pdfFilePath = string.Empty;
     private string? _barcodePdfFilePath;
     private List<BarcodeGroup> _barcodeGroups = new();
+    private Platform _currentPlatform = Platform.TEMU;
     
     /// <summary>
     /// 所属窗口（用于显示对话框）
@@ -101,10 +102,12 @@ public partial class SinglePagePrintViewModel : ViewModelBase
     /// <param name="pdfFilePath">PDF文件路径</param>
     /// <param name="ecoCodes">环保码列表</param>
     /// <param name="barcodePdfPath">条码PDF文件路径（可选）</param>
-    public async Task InitializeAsync(string pdfFilePath, ObservableCollection<EcoCodeItem> ecoCodes, string? barcodePdfPath = null)
+    /// <param name="platform">当前平台</param>
+    public async Task InitializeAsync(string pdfFilePath, ObservableCollection<EcoCodeItem> ecoCodes, string? barcodePdfPath = null, Platform platform = Platform.TEMU)
     {
         _pdfFilePath = pdfFilePath;
         _barcodePdfFilePath = barcodePdfPath;
+        _currentPlatform = platform;
         
         // 初始化环保码列表
         EcoCodes = ecoCodes;
@@ -138,10 +141,14 @@ public partial class SinglePagePrintViewModel : ViewModelBase
             }
             
             // 加载分隔符模板
+            var separatorFileName = _currentPlatform == Platform.SHEIN
+                ? "shien_separator_template.png"
+                : "separator_template.png";
+
             var templatePath = System.IO.Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory, 
                 "Resources", 
-                "separator_template.png"
+                separatorFileName
             );
             
             if (!System.IO.File.Exists(templatePath))

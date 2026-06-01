@@ -87,6 +87,43 @@ public class DatabaseService : IDatabaseService
         return Task.CompletedTask;
     }
 
+    // ========== 商品名称管理 ==========
+
+    public Task<List<ProductNameItem>> GetAllProductNamesAsync()
+    {
+        var collection = _db.GetCollection<ProductNameItem>("productnames");
+        var items = collection.FindAll().ToList();
+        return Task.FromResult(items);
+    }
+
+    public Task<ProductNameItem> AddProductNameAsync(ProductNameItem item)
+    {
+        var collection = _db.GetCollection<ProductNameItem>("productnames");
+
+        if (string.IsNullOrEmpty(item.Id))
+        {
+            item.Id = Guid.NewGuid().ToString();
+        }
+
+        collection.Insert(item);
+        return Task.FromResult(item);
+    }
+
+    public Task UpdateProductNameAsync(string id, ProductNameItem item)
+    {
+        var collection = _db.GetCollection<ProductNameItem>("productnames");
+        item.Id = id;
+        collection.Update(item);
+        return Task.CompletedTask;
+    }
+
+    public Task DeleteProductNameAsync(string id)
+    {
+        var collection = _db.GetCollection<ProductNameItem>("productnames");
+        collection.Delete(id);
+        return Task.CompletedTask;
+    }
+
     // ========== 打印历史管理 ==========
 
     public Task<List<PrintRecord>> GetAllRecordsAsync(DateFilter? filter = null)

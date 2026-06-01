@@ -33,12 +33,23 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
     private readonly List<BarcodeGroup> _barcodeGroups = new();
     private string _mainOrderPdfPath = string.Empty;
     private double _mainOrderPreviewBaseScale = 1d;
+    private Platform _currentPlatform = Platform.TEMU;
+
+    /// <summary>
+    /// 当前是否为希音平台（用于 UI 显示商品名称列）
+    /// </summary>
+    public bool IsSheinPlatform => _currentPlatform == Platform.SHEIN;
 
     public Window? OwnerWindow { get; set; }
 
     public ObservableCollection<LabelTemplateConfig> TemplateConfigs { get; } = new();
 
     public ObservableCollection<TemplateLabelQueueItem> QueueItems { get; } = new();
+
+    /// <summary>
+    /// 商品名称列表（供希音平台选择）
+    /// </summary>
+    public ObservableCollection<ProductNameItem> ProductNameItems { get; } = new();
 
     [ObservableProperty]
     private LabelTemplateConfig? _selectedTemplateConfig;
@@ -145,10 +156,12 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         ResetMainOrderPreviewZoomCommand.NotifyCanExecuteChanged();
     }
 
-    public async Task InitializeAsync(string mainOrderPdfPath, string? initialBarcodePdfPath = null, int initialPage = 1)
+    public async Task InitializeAsync(string mainOrderPdfPath, string? initialBarcodePdfPath = null, int initialPage = 1, Platform platform = Platform.TEMU)
     {
         _mainOrderPdfPath = mainOrderPdfPath;
+        _currentPlatform = platform;
         await LoadTemplatesAsync();
+        await LoadProductNamesAsync();
         await InitializeMainOrderAsync(initialPage);
 
         if (!string.IsNullOrWhiteSpace(initialBarcodePdfPath) && File.Exists(initialBarcodePdfPath))
@@ -312,6 +325,18 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             return;
         }
 
+        // 希音平台：校验每个待打印分组必须填写商品名称（英文）
+        if (_currentPlatform == Platform.SHEIN)
+        {
+            var missingProductName = pendingItems.Where(item => string.IsNullOrWhiteSpace(item.ProductNameEnglish)).ToList();
+            if (missingProductName.Count > 0)
+            {
+                var groupInfo = string.Join("、", missingProductName.Select(item => item.GroupDisplay));
+                await ShowErrorAsync($"以下分组未设置商品名称（英文打印名）：{groupInfo}\n\n希音平台要求每个条码分组必须设置商品名称。");
+                return;
+            }
+        }
+
         try
         {
             IsPrinting = true;
@@ -331,9 +356,24 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 return;
             }
 
-            var jobs = new List<PrintJob>
+            var jobs = new List<PrintJob>();
+
+            // 希音平台：只有一个面单，仅在第一次首打时打印主单
+            // Temu 平台：每次打印都先输出当前主单页
+            bool shouldPrintMainOrder;
+            if (_currentPlatform == Platform.SHEIN)
             {
-                new()
+                // 希音：只有当队列中没有任何已完成首打的分组时，才打印主单（即第一次打印）
+                shouldPrintMainOrder = !QueueItems.Any(item => item.IsBasePrintCompleted);
+            }
+            else
+            {
+                shouldPrintMainOrder = true;
+            }
+
+            if (shouldPrintMainOrder)
+            {
+                jobs.Add(new PrintJob
                 {
                     Options = new PrintOptions
                     {
@@ -345,8 +385,8 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                         PageRange = $"{CurrentMainOrderPage}"
                     },
                     Description = $"主单第{CurrentMainOrderPage}页"
-                }
-            };
+                });
+            }
 
             jobs.AddRange(await CreateTemplateLabelJobsAsync(
                 SelectedTemplateConfig,
@@ -356,7 +396,9 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 config.MainOrderPrinter.PrinterName,
                 "模板标签"));
 
-            StatusMessage = "模板打印任务已生成，正在先打印当前主单页，再打印模板标签...";
+            StatusMessage = shouldPrintMainOrder
+                ? "模板打印任务已生成，正在先打印主单页，再打印模板标签..."
+                : "模板打印任务已生成，正在打印模板标签（主单已在首次打印时输出）...";
 
             var result = await _printService.PrintBatchAsync(jobs);
 
@@ -405,6 +447,18 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         {
             await ShowErrorAsync("请先设置补打数量");
             return;
+        }
+
+        // 希音平台：补打也需要校验商品名称
+        if (_currentPlatform == Platform.SHEIN)
+        {
+            var missingProductName = reprintItems.Where(item => string.IsNullOrWhiteSpace(item.ProductNameEnglish)).ToList();
+            if (missingProductName.Count > 0)
+            {
+                var groupInfo = string.Join("、", missingProductName.Select(item => item.GroupDisplay));
+                await ShowErrorAsync($"以下分组未设置商品名称（英文打印名）：{groupInfo}\n\n希音平台要求每个条码分组必须设置商品名称。");
+                return;
+            }
         }
 
         try
@@ -594,7 +648,8 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 template,
                 item.BarcodePdfPath,
                 item.BarcodeGroup.StartPage,
-                includeImporterInfo);
+                includeImporterInfo,
+                item.ProductNameEnglish);
 
             jobs.Add(new PrintJob
             {
@@ -618,15 +673,39 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
         await LoadTemplatesAsync(null);
     }
 
+    private async Task LoadProductNamesAsync()
+    {
+        try
+        {
+            var items = await _databaseService.GetAllProductNamesAsync();
+            ProductNameItems.Clear();
+            foreach (var item in items)
+            {
+                ProductNameItems.Add(item);
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"加载商品名称失败: {ex.Message}");
+        }
+    }
+
     private async Task LoadTemplatesAsync(string? selectedTemplateId)
     {
         try
         {
             var templates = await _labelTemplateService.GetTemplatesAsync();
             TemplateConfigs.Clear();
+
+            // 按平台过滤模板：希音只显示 shein 模板，Temu 只显示 temu 模板
+            var expectedVariant = _currentPlatform == Platform.SHEIN ? "shein" : "temu";
             foreach (var template in templates)
             {
-                TemplateConfigs.Add(template);
+                var variant = string.IsNullOrWhiteSpace(template.LayoutVariant) ? "temu" : template.LayoutVariant.ToLowerInvariant();
+                if (string.Equals(variant, expectedVariant, StringComparison.OrdinalIgnoreCase))
+                {
+                    TemplateConfigs.Add(template);
+                }
             }
 
             SelectedTemplateConfig = !string.IsNullOrWhiteSpace(selectedTemplateId)
@@ -634,7 +713,7 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                     ?? TemplateConfigs.FirstOrDefault()
                 : TemplateConfigs.FirstOrDefault();
             StatusMessage = TemplateConfigs.Count == 0
-                ? "未找到模板，请先新建模板配置"
+                ? $"未找到{(_currentPlatform == Platform.SHEIN ? "希音" : "Temu")}模板，请先新建对应模板配置"
                 : "请选择条码分组加入待打印队列";
         }
         catch (Exception ex)
@@ -747,7 +826,12 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             IsScanningBarcode = true;
             StatusMessage = "正在识别条码分组...";
 
-            var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "separator_template.png");
+            // 根据平台选择分隔符模板
+            var separatorFileName = _currentPlatform == Platform.SHEIN
+                ? "shien_separator_template.png"
+                : "separator_template.png";
+
+            var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", separatorFileName);
             if (!File.Exists(templatePath))
             {
                 await ShowErrorAsync($"分隔符模板不存在: {templatePath}");

@@ -116,6 +116,7 @@ public partial class App : Application
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<HistoryViewModel>();
         services.AddTransient<EcoCodeViewModel>();
+        services.AddTransient<ProductNameViewModel>();
         services.AddTransient<SinglePagePrintViewModel>();
         services.AddTransient<OcrRegionConfigViewModel>();
         services.AddTransient<LabelSelectionViewModel>();

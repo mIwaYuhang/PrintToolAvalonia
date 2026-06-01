@@ -483,6 +483,121 @@
                 </Grid>
             </TabItem>
 
+            <!-- 商品名称管理标签页（希音平台用） -->
+            <TabItem Header="商品名称">
+                <Grid Margin="10" RowDefinitions="Auto,*">
+                    <!-- 顶部操作栏 -->
+                    <Border Grid.Row="0" 
+                           Classes="toolbar"
+                           Margin="0,0,0,10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <StackPanel Grid.Column="0" Spacing="4">
+                                <TextBlock Text="商品名称管理（希音平台）"
+                                          Classes="section-title"
+                                          VerticalAlignment="Center"/>
+                                <TextBlock Text="中文名称用于打单时人工查看，英文名称用于实际打印到标签上"
+                                          Classes="secondary"
+                                          FontSize="12"/>
+                            </StackPanel>
+                            <Button Grid.Column="1"
+                                   Content="添加商品名称"
+                                   Command="{Binding ProductNameViewModel.AddProductNameCommand}"
+                                   Classes="accent"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- 商品名称列表 -->
+                    <ScrollViewer Grid.Row="1">
+                        <ItemsControl ItemsSource="{Binding ProductNameViewModel.ProductNames}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Spacing="10"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Classes="card">
+                                        <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="15">
+                                            <!-- 图标 -->
+                                            <Viewbox Grid.Column="0" 
+                                                    Width="40" Height="40"
+                                                    VerticalAlignment="Center">
+                                                <Canvas Width="24" Height="24">
+                                                    <Path Fill="#E6A23C" 
+                                                         Data="M5,4V7H10.5V19H13.5V7H19V4H5Z"/>
+                                                </Canvas>
+                                            </Viewbox>
+
+                                            <!-- 信息 -->
+                                            <StackPanel Grid.Column="1" 
+                                                       VerticalAlignment="Center"
+                                                       Spacing="5">
+                                                <TextBlock Text="{Binding ChineseName}" 
+                                                          FontSize="16"
+                                                          FontWeight="SemiBold"/>
+                                                <TextBlock Text="{Binding EnglishName}" 
+                                                          FontSize="14"
+                                                          Foreground="#606266"/>
+                                                <TextBlock Text="{Binding CreatedAt, StringFormat='创建时间: {0:yyyy-MM-dd HH:mm:ss}'}" 
+                                                          FontSize="12"
+                                                          Classes="secondary"/>
+                                            </StackPanel>
+
+                                            <!-- 编辑按钮 -->
+                                            <Button Grid.Column="2"
+                                                   Content="编辑"
+                                                   Command="{Binding $parent[Window].DataContext.ProductNameViewModel.EditProductNameCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   Classes="secondary"
+                                                   MinWidth="80"/>
+
+                                            <!-- 删除按钮 -->
+                                            <Button Grid.Column="3"
+                                                   Content="删除"
+                                                   Command="{Binding $parent[Window].DataContext.ProductNameViewModel.DeleteProductNameCommand}"
+                                                   CommandParameter="{Binding}"
+                                                   Classes="danger"
+                                                   MinWidth="80"/>
+                                        </Grid>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+
+                    <!-- 空状态提示 -->
+                    <StackPanel Grid.Row="1"
+                               HorizontalAlignment="Center"
+                               VerticalAlignment="Center"
+                               Spacing="20">
+                        <StackPanel.IsVisible>
+                            <MultiBinding Converter="{x:Static BoolConverters.Or}">
+                                <Binding Path="!ProductNameViewModel.ProductNames.Count"/>
+                            </MultiBinding>
+                        </StackPanel.IsVisible>
+
+                        <Viewbox Width="80" Height="80" 
+                                HorizontalAlignment="Center">
+                            <Canvas Width="24" Height="24">
+                                <Path Fill="#BDBDBD" 
+                                     Data="M5,4V7H10.5V19H13.5V7H19V4H5Z"/>
+                            </Canvas>
+                        </Viewbox>
+
+                        <TextBlock Text="还没有商品名称" 
+                                  FontSize="18"
+                                  FontWeight="SemiBold"
+                                  Foreground="#757575"
+                                  HorizontalAlignment="Center"/>
+                        <TextBlock Text="点击上方'添加商品名称'按钮开始添加（中英文对照）" 
+                                  FontSize="14"
+                                  Foreground="#9E9E9E"
+                                  HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </TabItem>
+
             <!-- 环保码管理标签页 -->
             <TabItem Header="环保码管理">
                 <Grid Margin="10" RowDefinitions="Auto,*">

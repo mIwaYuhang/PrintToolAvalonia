@@ -85,12 +85,13 @@ public class LabelTemplateService : ILabelTemplateService
         return JsonSerializer.Serialize(template, _jsonWriteOptions);
     }
 
-    public string CreateNewTemplateJson()
+    public string CreateNewTemplateJson(string layoutVariant = "temu")
     {
         var template = new LabelTemplateConfig
         {
             Id = $"template_{DateTime.Now:yyyyMMddHHmmss}",
             Name = "新模板",
+            LayoutVariant = layoutVariant,
             Representatives = new List<LabelRepresentativeInfo> { new(), new(), new() },
             ImporterInfo = new LabelImporterInfo()
         };
@@ -117,12 +118,17 @@ public class LabelTemplateService : ILabelTemplateService
         return template;
     }
 
-    public async Task<string> GeneratePreviewPdfAsync(string templateJson, string? barcodePdfPath, int? barcodePageNumber, bool includeImporterInfo)
+    public async Task<string> GeneratePreviewPdfAsync(
+        string templateJson,
+        string? barcodePdfPath,
+        int? barcodePageNumber,
+        bool includeImporterInfo,
+        string productNameEnglish = "")
     {
         var template = ParseTemplate(templateJson) ?? throw new InvalidOperationException("模板 JSON 无法解析");
         var previewSource = !string.IsNullOrWhiteSpace(barcodePdfPath) && File.Exists(barcodePdfPath)
-            ? new List<(string? BarcodePdfPath, int? BarcodePageNumber)> { (barcodePdfPath, barcodePageNumber ?? 1) }
-            : new List<(string? BarcodePdfPath, int? BarcodePageNumber)> { (null, null) };
+            ? new List<(string? BarcodePdfPath, int? BarcodePageNumber, string ProductNameEnglish)> { (barcodePdfPath, barcodePageNumber ?? 1, productNameEnglish) }
+            : new List<(string? BarcodePdfPath, int? BarcodePageNumber, string ProductNameEnglish)> { (null, null, productNameEnglish) };
 
         return await GeneratePdfFileAsync(template, previewSource, includeImporterInfo, true);
     }
@@ -131,14 +137,15 @@ public class LabelTemplateService : ILabelTemplateService
         LabelTemplateConfig template,
         string barcodePdfPath,
         int barcodePageNumber,
-        bool includeImporterInfo)
+        bool includeImporterInfo,
+        string productNameEnglish = "")
     {
         if (template == null) throw new ArgumentNullException(nameof(template));
         if (string.IsNullOrWhiteSpace(barcodePdfPath)) throw new InvalidOperationException("条码 PDF 路径不能为空");
 
-        var labelSources = new List<(string? BarcodePdfPath, int? BarcodePageNumber)>
+        var labelSources = new List<(string? BarcodePdfPath, int? BarcodePageNumber, string ProductNameEnglish)>
         {
-            (barcodePdfPath, barcodePageNumber)
+            (barcodePdfPath, barcodePageNumber, productNameEnglish)
         };
 
         return await GeneratePdfFileAsync(template, labelSources, includeImporterInfo, false);
@@ -146,7 +153,7 @@ public class LabelTemplateService : ILabelTemplateService
 
     private async Task<string> GeneratePdfFileAsync(
         LabelTemplateConfig template,
-        IReadOnlyList<(string? BarcodePdfPath, int? BarcodePageNumber)> labelSources,
+        IReadOnlyList<(string? BarcodePdfPath, int? BarcodePageNumber, string ProductNameEnglish)> labelSources,
         bool includeImporterInfo,
         bool allowBarcodePlaceholder)
     {
@@ -168,11 +175,13 @@ public class LabelTemplateService : ILabelTemplateService
             foreach (var labelSource in labelSources)
             {
                 var hasBarcodeSource = !string.IsNullOrWhiteSpace(labelSource.BarcodePdfPath) && labelSource.BarcodePageNumber.HasValue;
-                var html = BuildLabelHtml(template, hasBarcodeSource, includeImporterInfo, allowBarcodePlaceholder, footerImageBytes);
+                var html = BuildLabelHtml(template, hasBarcodeSource, includeImporterInfo, allowBarcodePlaceholder, footerImageBytes, labelSource.ProductNameEnglish);
                 AddHtmlPage(pdfDocument, pageSize, html);
 
-                if (hasBarcodeSource)
+                if (hasBarcodeSource && IsTemuLayout(template))
                     AddBarcodeOverlay(pdfDocument, labelSource.BarcodePdfPath!, labelSource.BarcodePageNumber!.Value);
+                else if (hasBarcodeSource && IsSheinLayout(template))
+                    AddBarcodeOverlayShein(pdfDocument, labelSource.BarcodePdfPath!, labelSource.BarcodePageNumber!.Value);
             }
 
             pdfDocument.Close();
@@ -284,6 +293,20 @@ public class LabelTemplateService : ILabelTemplateService
         bool hasBarcodeSource,
         bool includeImporterInfo,
         bool allowBarcodePlaceholder,
+        byte[]? footerImageBytes,
+        string productNameEnglish = "")
+    {
+        if (IsSheinLayout(template))
+            return BuildSheinLabelHtml(template, hasBarcodeSource, includeImporterInfo, allowBarcodePlaceholder, footerImageBytes, productNameEnglish);
+
+        return BuildTemuLabelHtml(template, hasBarcodeSource, includeImporterInfo, allowBarcodePlaceholder, footerImageBytes);
+    }
+
+    private string BuildTemuLabelHtml(
+        LabelTemplateConfig template,
+        bool hasBarcodeSource,
+        bool includeImporterInfo,
+        bool allowBarcodePlaceholder,
         byte[]? footerImageBytes)
     {
         var showImporter = includeImporterInfo && HasImporterInfo(template.ImporterInfo);
@@ -380,6 +403,88 @@ public class LabelTemplateService : ILabelTemplateService
         return html;
     }
 
+    /// <summary>
+    /// 构建希音布局 HTML
+    /// </summary>
+    private string BuildSheinLabelHtml(
+        LabelTemplateConfig template,
+        bool hasBarcodeSource,
+        bool includeImporterInfo,
+        bool allowBarcodePlaceholder,
+        byte[]? footerImageBytes,
+        string productNameEnglish)
+    {
+        var html = LoadSheinLabelLayoutHtml();
+
+        // 1. 商品名称
+        html = html.Replace("{{PRODUCT_NAME_LABEL}}", Esc(template.ProductNameLabel));
+        html = html.Replace("{{PRODUCT_NAME_VALUE}}", Esc(
+            string.IsNullOrWhiteSpace(productNameEnglish) ? "Sample Product" : productNameEnglish));
+
+        // 2. 制造商
+        var mfgSb = new StringBuilder();
+        var manufacturerItems = new[]
+        {
+            (Label: template.ManufacturerLabel, Value: template.ManufacturerName),
+            (Label: template.ManufacturerEmailLabel, Value: template.ManufacturerEmail),
+            (Label: template.AddressLabel, Value: template.ManufacturerAddress)
+        }
+        .Where(item => !string.IsNullOrWhiteSpace(item.Label) || !string.IsNullOrWhiteSpace(item.Value))
+        .ToList();
+        for (var index = 0; index < manufacturerItems.Count; index++)
+        {
+            var item = manufacturerItems[index];
+            AppendKvHtml(mfgSb, item.Label, item.Value, index == manufacturerItems.Count - 1);
+        }
+        html = html.Replace("{{MANUFACTURER_DETAILS}}", mfgSb.ToString());
+
+        // 3. 授权代表（EU REP / TR REP / UK REP）
+        html = html.Replace("{{REPRESENTATIVES_CONTENT}}", BuildRepresentativesHtml(template));
+
+        // 4. 进口商
+        if (includeImporterInfo && HasImporterInfo(template.ImporterInfo))
+        {
+            var importerRow = $@"<div class='importer-section section-sep'><div class='importer-inner'>{BuildImporterSectionsHtml(template.ImporterInfo)}</div></div>";
+            html = html.Replace("{{IMPORTER_ROW}}", importerRow);
+        }
+        else
+        {
+            html = html.Replace("{{IMPORTER_ROW}}", "");
+        }
+
+        // 5. 底部信息行（Batch Number | Made in China | PP 5）
+        var bottomInfoSb = new StringBuilder();
+        bottomInfoSb.Append("<div class='bottom-info-section section-sep'>");
+        bottomInfoSb.Append($"<div class='bottom-info-cell'><span class='kv-label'>{Esc(template.BatchNumberLabel)}:</span> <span class='kv-value'>{Esc(template.BatchNumber)}</span></div>");
+        bottomInfoSb.Append($"<div class='bottom-info-cell'>{Esc(template.MadeInText)}</div>");
+        bottomInfoSb.Append($"<div class='bottom-info-cell bottom-info-cell-last'>{Esc(template.PackagingMaterialText)}</div>");
+        bottomInfoSb.Append("</div>");
+        html = html.Replace("{{BOTTOM_INFO_ROW}}", bottomInfoSb.ToString());
+
+        // 6. 条码
+        string barcodeContent;
+        if (hasBarcodeSource)
+            barcodeContent = "";
+        else if (allowBarcodePlaceholder)
+            barcodeContent = "<div style='width:100%; height:19mm; text-align:center; line-height:19mm; font-weight:bold; font-size:7pt;'>BARCODE PREVIEW</div>";
+        else
+            barcodeContent = "";
+        html = html.Replace("{{BARCODE_CONTENT}}", barcodeContent);
+
+        // 7. 环保标识图片
+        if (footerImageBytes != null)
+        {
+            html = html.Replace("{{FOOTER_IMAGE_CONTENT}}",
+                $"<img class='footer-image' src='data:image/png;base64,{Convert.ToBase64String(footerImageBytes)}' />");
+        }
+        else
+        {
+            html = html.Replace("{{FOOTER_IMAGE_CONTENT}}", "");
+        }
+
+        return html;
+    }
+
     private static string BuildLayoutClass(bool showImporter, bool showWarning, bool showFooter)
     {
         var classes = new List<string>
@@ -415,30 +520,35 @@ public class LabelTemplateService : ILabelTemplateService
 
         if (items.Count == 0) return "";
 
+        // 使用 table 实现固定高度（iText 对 table height 支持较好）
+        var isShein = string.Equals(template.LayoutVariant, "shein", StringComparison.OrdinalIgnoreCase);
+        var tableHeight = isShein ? "25mm" : "";
+        var tableStyle = !string.IsNullOrEmpty(tableHeight) ? $" style='height:{tableHeight};'" : "";
+
         var sb = new StringBuilder();
-        sb.Append("<div class='rep-stack'>");
+        sb.Append($"<table class='rep-stack' cellspacing='0' cellpadding='0'{tableStyle}>");
         for (var index = 0; index < items.Count; index++)
         {
             var rep = items[index];
-            var rowClass = index == items.Count - 1 ? "rep-row rep-row-last" : "rep-row";
-            sb.Append($"<div class='{rowClass}'>");
-            sb.Append("<div class='rep-badges-cell'>");
+            var borderStyle = index < items.Count - 1 ? "border-bottom:0.5pt solid #000;" : "";
+            sb.Append($"<tr style='{borderStyle}'>");
+            sb.Append("<td class='rep-badges-cell'>");
             sb.Append("<table class='badge-grid' cellspacing='0' cellpadding='0'><tr>");
             sb.Append($"<td class='badge' style='width:50%;'>{Esc(rep.RegionCode)}</td>");
             sb.Append($"<td class='badge' style='width:50%;'>{Esc(template.RepresentativeLabel)}</td>");
             sb.Append("</tr></table>");
-            sb.Append("</div>");
-            sb.Append("<div class='rep-info'>");
+            sb.Append("</td>");
+            sb.Append("<td class='rep-info'>");
             if (!string.IsNullOrWhiteSpace(rep.Name))
                 sb.Append($"<div class='rep-name'>{Esc(rep.Name)}</div>");
             if (!string.IsNullOrWhiteSpace(rep.Address))
                 sb.Append($"<div class='rep-address'>{Esc(rep.Address)}</div>");
             if (!string.IsNullOrWhiteSpace(rep.Email))
                 sb.Append($"<div class='rep-email'>{Esc(rep.Email)}</div>");
-            sb.Append("</div>");
-            sb.Append("</div>");
+            sb.Append("</td>");
+            sb.Append("</tr>");
         }
-        sb.Append("</div>");
+        sb.Append("</table>");
         return sb.ToString();
     }
 
@@ -451,11 +561,12 @@ public class LabelTemplateService : ILabelTemplateService
                 (info.EuImporterNameLabel, info.EuImporterName),
                 (info.EuImporterAddressLabel, info.EuImporterAddress),
                 (info.EuImporterElectronicAddressLabel, info.EuImporterElectronicAddress)));
-        if (HasAnyText(info.UkImporterName, info.UkImporterAddress))
+        if (HasAnyText(info.UkImporterName, info.UkImporterAddress, info.UkImporterElectronicAddress))
             blocks.Add(BuildImporterBlockHtml(
                 info.UkTitle,
                 (info.UkImporterNameLabel, info.UkImporterName),
-                (info.UkImporterAddressLabel, info.UkImporterAddress)));
+                (info.UkImporterAddressLabel, info.UkImporterAddress),
+                (info.UkImporterElectronicAddressLabel, info.UkImporterElectronicAddress)));
 
         var sb = new StringBuilder();
         for (var index = 0; index < blocks.Count; index++)
@@ -503,6 +614,90 @@ public class LabelTemplateService : ILabelTemplateService
                !string.IsNullOrWhiteSpace(importerInfo.UkImporterAddress);
     }
 
+    private static bool IsSheinLayout(LabelTemplateConfig template)
+    {
+        return string.Equals(template.LayoutVariant, "shein", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsTemuLayout(LabelTemplateConfig template)
+    {
+        return !IsSheinLayout(template);
+    }
+
+    private string? _sheinLabelLayoutHtmlCache;
+
+    /// <summary>
+    /// 加载 shein_label_layout.html 模板文件（带缓存）
+    /// </summary>
+    private string LoadSheinLabelLayoutHtml()
+    {
+        if (_sheinLabelLayoutHtmlCache != null) return _sheinLabelLayoutHtmlCache;
+
+        var path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "label_templates", "shein_label_layout.html");
+        if (!File.Exists(path)) throw new FileNotFoundException($"希音标签布局模板文件不存在: {path}");
+        _sheinLabelLayoutHtmlCache = File.ReadAllText(path);
+        return _sheinLabelLayoutHtmlCache;
+    }
+
+    /// <summary>
+    /// 希音布局的条码覆盖位置（左下角区域）
+    /// </summary>
+    private void AddBarcodeOverlayShein(ITextPdfDocument targetPdfDocument, string barcodePdfPath, int pageNumber)
+    {
+        if (!File.Exists(barcodePdfPath)) throw new FileNotFoundException($"条码 PDF 不存在: {barcodePdfPath}");
+
+        using var barcodeReader = new PdfReader(barcodePdfPath);
+        using var barcodeDocument = new ITextPdfDocument(barcodeReader);
+        if (pageNumber < 1 || pageNumber > barcodeDocument.GetNumberOfPages())
+            throw new ArgumentOutOfRangeException(nameof(pageNumber), $"条码页码超出范围: {pageNumber}");
+
+        var barcodePage = barcodeDocument.GetPage(pageNumber);
+        var barcodeForm = barcodePage.CopyAsFormXObject(targetPdfDocument);
+        var targetPage = targetPdfDocument.GetLastPage();
+        var targetRect = GetSheinBarcodePlacementRect(targetPage.GetPageSize(), barcodePage.GetPageSize());
+
+        new PdfCanvas(targetPage).AddXObjectFittedIntoRectangle(barcodeForm, targetRect);
+    }
+
+    /// <summary>
+    /// 希音布局条码放置区域
+    /// 使用与 Temu 相同的坐标参考系：labelBottom 为标签底边
+    /// 条码位于环保标识(14mm)上方，条码区高 15mm
+    /// </summary>
+    private Rectangle GetSheinBarcodePlacementRect(Rectangle pageSize, Rectangle barcodePageSize)
+    {
+        var pageHeight = pageSize.GetHeight();
+        var pageWidth = pageSize.GetWidth();
+
+        // 与 Temu 相同的标签定位方式
+        var labelLeft = MillimetersToPoints(LabelPageMarginMm);
+        var labelBottom = pageHeight - MillimetersToPoints(LabelPageMarginMm) - MillimetersToPoints(LabelHeightMm);
+
+        // 条码区域：距标签底边 19mm（环保标识高度+间隔），高 15mm
+        var footerHeightMm = 19f;
+        var barcodeHeightMm = 15f;
+        var frameX = labelLeft + MillimetersToPoints(0.5f);
+        var frameY = labelBottom + MillimetersToPoints(footerHeightMm + 0.5f);
+        var frameWidth = MillimetersToPoints(LabelWidthMm - 1f);
+        var frameHeight = MillimetersToPoints(barcodeHeightMm);
+
+        var sourceWidth = barcodePageSize.GetWidth();
+        var sourceHeight = barcodePageSize.GetHeight();
+
+        if (sourceWidth <= 0 || sourceHeight <= 0)
+        {
+            return new Rectangle(frameX, frameY, frameWidth, frameHeight);
+        }
+
+        var scale = Math.Min(frameWidth / sourceWidth, frameHeight / sourceHeight);
+        var scaledWidth = sourceWidth * scale;
+        var scaledHeight = sourceHeight * scale;
+        var x = frameX + (frameWidth - scaledWidth) / 2f;
+        var y = frameY + (frameHeight - scaledHeight) / 2f;
+
+        return new Rectangle(x, y, scaledWidth, scaledHeight);
+    }
+
     private byte[]? LoadFooterImageBytes(string fileName)
     {
         var imagePath = _printService.GetBuiltinResourcePath(fileName);
@@ -516,6 +711,7 @@ public class LabelTemplateService : ILabelTemplateService
 
         template.Id = string.IsNullOrWhiteSpace(template.Id) ? $"template_{DateTime.Now:yyyyMMddHHmmss}" : template.Id.Trim();
         template.Name = string.IsNullOrWhiteSpace(template.Name) ? template.Id : template.Name.Trim();
+        template.LayoutVariant = string.IsNullOrWhiteSpace(template.LayoutVariant) ? "temu" : template.LayoutVariant.Trim().ToLowerInvariant();
         template.Representatives ??= new List<LabelRepresentativeInfo>();
         template.ImporterInfo ??= new LabelImporterInfo();
         template.FooterImageFileName = string.IsNullOrWhiteSpace(template.FooterImageFileName) ? "环保标识.png" : template.FooterImageFileName;

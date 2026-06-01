@@ -204,18 +204,25 @@ public partial class MainWindowViewModel : ViewModelBase
     /// </summary>
     public EcoCodeViewModel EcoCodeViewModel { get; }
 
+    /// <summary>
+    /// 商品名称管理 ViewModel
+    /// </summary>
+    public ProductNameViewModel ProductNameViewModel { get; }
+
     public MainWindowViewModel(
         IFileService fileService,
         IPrintService printService,
         IDatabaseService databaseService,
         ILabelTemplateService labelTemplateService,
-        EcoCodeViewModel ecoCodeViewModel)
+        EcoCodeViewModel ecoCodeViewModel,
+        ProductNameViewModel productNameViewModel)
     {
         _fileService = fileService;
         _printService = printService;
         _databaseService = databaseService;
         _labelTemplateService = labelTemplateService;
         EcoCodeViewModel = ecoCodeViewModel;
+        ProductNameViewModel = productNameViewModel;
 
         // 初始化命令
         AddFilesCommand = new RelayCommand<string>(async (fileType) => await AddFilesAsync(fileType));
@@ -789,7 +796,7 @@ public partial class MainWindowViewModel : ViewModelBase
             }
 
             // 初始化ViewModel（传入环保码列表和条码PDF路径）
-            await viewModel.InitializeAsync(firstFile.Path, EcoCodes, barcodePdfPath);
+            await viewModel.InitializeAsync(firstFile.Path, EcoCodes, barcodePdfPath, SelectedPlatform);
 
             // 设置OwnerWindow
             viewModel.OwnerWindow = dialog;
@@ -833,7 +840,7 @@ public partial class MainWindowViewModel : ViewModelBase
 
             var firstMainOrderFile = MainOrderFiles[0];
 
-            await viewModel.InitializeAsync(firstMainOrderFile.Path, barcodePdfPath, 1);
+            await viewModel.InitializeAsync(firstMainOrderFile.Path, barcodePdfPath, 1, SelectedPlatform);
             viewModel.OwnerWindow = dialog;
             dialog.DataContext = viewModel;
             await dialog.ShowDialog(GetMainWindow());

@@ -10,15 +10,21 @@ public interface ILabelTemplateService
 
     Task<string> GetTemplateJsonAsync(LabelTemplateConfig template);
 
-    string CreateNewTemplateJson();
+    string CreateNewTemplateJson(string layoutVariant = "temu");
 
     Task<LabelTemplateConfig> SaveTemplateAsync(string templateJson, string? originalFilePath = null);
 
-    Task<string> GeneratePreviewPdfAsync(string templateJson, string? barcodePdfPath, int? barcodePageNumber, bool includeImporterInfo);
+    Task<string> GeneratePreviewPdfAsync(
+        string templateJson,
+        string? barcodePdfPath,
+        int? barcodePageNumber,
+        bool includeImporterInfo,
+        string productNameEnglish = "");
 
     Task<string> GenerateLabelPdfAsync(
         LabelTemplateConfig template,
         string barcodePdfPath,
         int barcodePageNumber,
-        bool includeImporterInfo);
+        bool includeImporterInfo,
+        string productNameEnglish = "");
 }

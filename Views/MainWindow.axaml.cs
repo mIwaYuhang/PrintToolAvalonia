@@ -30,6 +30,7 @@ public partial class MainWindow : Window
         if (DataContext is MainWindowViewModel viewModel)
         {
             viewModel.EcoCodeViewModel.OwnerWindow = this;
+            viewModel.ProductNameViewModel.OwnerWindow = this;
         }
 
         // 获取拖放区域的引用

@@ -1,0 +1,49 @@
+{
+  "id": "default_shein_100x100",
+  "name": "希音默认100x100模板",
+  "layoutVariant": "shein",
+  "productNameLabel": "Product Name",
+  "batchNumberLabel": "Batch Number",
+  "batchNumber": "",
+  "manufacturerLabel": "Manufacturer",
+  "manufacturerName": "Dongguan Changan Fulaijewelry factory",
+  "addressLabel": "Address",
+  "manufacturerAddress": "Room 401,No.7,Lane 1,Nanyuan, Changan Town,Dongguan,Guangdong,CN(China),Dongguan,Guangdong,China",
+  "manufacturerEmailLabel": "Email",
+  "manufacturerEmail": "3979658097@qq.com",
+  "representativeLabel": "REP",
+  "representatives": [
+    {
+      "regionCode": "EU",
+      "name": "ZXY Horizon SAS",
+      "address": "Bureau 797 37 passage du Ponceau 75002 Paris,Paris,Paris,France\nPostcode: 75002",
+      "email": "friedlichtrichter@outlook.com"
+    },
+    {
+      "regionCode": "TR",
+      "name": "Evon Sai Depolama Hizmetleri Ve Ticaret Limited Şirketi",
+      "address": "Bahçelievler Mahallesi Saklı Vadi Sokak My Club Fitness Life Centers No:28 İç Kapı No:Z3 Bahçelievler / İstanbul",
+      "email": "Müşteri Hizmetleri: https://shein.com/contact-us.html"
+    }
+  ],
+  "importerInfo": {
+    "euTitle": "EU Importer",
+    "euImporterNameLabel": "",
+    "euImporterName": "INFINITE STYLES ECOMMERCE CO.,LIMITED",
+    "euImporterAddressLabel": "Address",
+    "euImporterAddress": "1-2 Victoria Building, Haddington Road, Dublin4, Dublin, D04 XN32, Ireland",
+    "euImporterElectronicAddressLabel": "Electronic Address",
+    "euImporterElectronicAddress": "https://shein.com/contact-us.html",
+    "ukTitle": "UK REP/Importer",
+    "ukImporterNameLabel": "",
+    "ukImporterName": "SHEIN DISTRIBUTION UK LIMITED",
+    "ukImporterAddressLabel": "Address",
+    "ukImporterAddress": "5 Churchill Place, 10th Floor, London, United Kingdom, E14 5HU",
+    "ukImporterElectronicAddressLabel": "Electronic Address",
+    "ukImporterElectronicAddress": "https://shein.com/contact-us.html"
+  },
+  "madeInText": "Made in China",
+  "packagingMaterialText": "PP 5   Raccolta Plastica",
+  "footerImageFileName": "环保标识.png",
+  "warningText": ""
+}

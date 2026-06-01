@@ -9,6 +9,17 @@ public class LabelTemplateConfig
 
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>
+    /// 布局变体：temu 或 shein
+    /// </summary>
+    public string LayoutVariant { get; set; } = "temu";
+
+    // ========== 商品名称（希音专用，打印时动态传入） ==========
+
+    public string ProductNameLabel { get; set; } = "Product Name";
+
+    // ========== 制造商信息 ==========
+
     public string BatchNumberLabel { get; set; } = "Batch Number/Parti Numaras";
 
     public string BatchNumber { get; set; } = string.Empty;
@@ -25,11 +36,29 @@ public class LabelTemplateConfig
 
     public string ManufacturerEmail { get; set; } = string.Empty;
 
+    // ========== 授权代表 ==========
+
     public string RepresentativeLabel { get; set; } = "REP";
 
     public List<LabelRepresentativeInfo> Representatives { get; set; } = new();
 
+    // ========== 进口商信息 ==========
+
     public LabelImporterInfo ImporterInfo { get; set; } = new();
+
+    // ========== 底部信息（希音专用） ==========
+
+    /// <summary>
+    /// 产地标签（如 "Made in China"）
+    /// </summary>
+    public string MadeInText { get; set; } = string.Empty;
+
+    /// <summary>
+    /// 包装材质标识（如 "PP 5   Raccolta Plastica"）
+    /// </summary>
+    public string PackagingMaterialText { get; set; } = string.Empty;
+
+    // ========== 页脚 ==========
 
     public string FooterImageFileName { get; set; } = "环保标识.png";
 
@@ -75,4 +104,8 @@ public class LabelImporterInfo
     public string UkImporterAddressLabel { get; set; } = "UK Importer Address";
 
     public string UkImporterAddress { get; set; } = string.Empty;
+
+    public string UkImporterElectronicAddressLabel { get; set; } = "UK Importer Electronic Address";
+
+    public string UkImporterElectronicAddress { get; set; } = string.Empty;
 }
