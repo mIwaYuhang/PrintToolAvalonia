@@ -18,6 +18,7 @@ public class PlatformToRuleConverter : IValueConverter
             {
                 Platform.TEMU => "条码页数 - 主单页数 + 1",
                 Platform.SHEIN => "条码页数",
+                Platform.SHEIN_SPECIAL => "条码页数",
                 _ => "未知规则"
             };
         }

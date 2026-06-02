@@ -48,6 +48,9 @@ public partial class LabelTemplateEditorViewModel : ViewModelBase
     [ObservableProperty]
     private bool _includeImporterInfo = true;
 
+    [ObservableProperty]
+    private string _labelSizeText = "100mm × 100mm";
+
     public LabelTemplateEditorViewModel(ILabelTemplateService labelTemplateService, IPdfRenderService pdfRenderService)
     {
         _labelTemplateService = labelTemplateService;
@@ -58,7 +61,8 @@ public partial class LabelTemplateEditorViewModel : ViewModelBase
         LabelTemplateConfig? template,
         string? previewBarcodePdfPath,
         int? previewBarcodePageNumber,
-        bool includeImporterInfo)
+        bool includeImporterInfo,
+        string newTemplateLayoutVariant = "temu")
     {
         _isInitializing = true;
         _previewBarcodePdfPath = previewBarcodePdfPath;
@@ -67,10 +71,48 @@ public partial class LabelTemplateEditorViewModel : ViewModelBase
         _originalFilePath = template?.SourceFilePath;
         DialogTitle = template == null ? "新建模板" : $"编辑模板 - {template.Name}";
         TemplateJsonText = template == null
-            ? _labelTemplateService.CreateNewTemplateJson()
+            ? _labelTemplateService.CreateNewTemplateJson(newTemplateLayoutVariant)
             : await _labelTemplateService.GetTemplateJsonAsync(template);
+        UpdateLabelSizeText();
         _isInitializing = false;
         await RefreshPreviewAsync();
+    }
+
+    /// <summary>
+    /// 根据当前 JSON 中的 layoutVariant 更新标签尺寸提示
+    /// 冷希音特供款(shein_special)为 60mm × 80mm，其余为 100mm × 100mm
+    /// </summary>
+    private void UpdateLabelSizeText()
+    {
+        var variant = ExtractLayoutVariant(TemplateJsonText);
+        LabelSizeText = string.Equals(variant, "shein_special", StringComparison.OrdinalIgnoreCase)
+            ? "60mm × 80mm"
+            : "100mm × 100mm";
+    }
+
+    private static string ExtractLayoutVariant(string templateJson)
+    {
+        if (string.IsNullOrWhiteSpace(templateJson))
+        {
+            return "temu";
+        }
+
+        try
+        {
+            using var doc = System.Text.Json.JsonDocument.Parse(templateJson);
+            if (doc.RootElement.TryGetProperty("layoutVariant", out var element) &&
+                element.ValueKind == System.Text.Json.JsonValueKind.String)
+            {
+                var value = element.GetString();
+                return string.IsNullOrWhiteSpace(value) ? "temu" : value.Trim().ToLowerInvariant();
+            }
+        }
+        catch
+        {
+            // JSON 编辑过程中可能不合法，忽略并保持默认
+        }
+
+        return "temu";
     }
 
     partial void OnTemplateJsonTextChanged(string value)
@@ -100,6 +142,7 @@ public partial class LabelTemplateEditorViewModel : ViewModelBase
         {
             IsPreviewLoading = true;
             PreviewStatusMessage = "正在生成打印预览...";
+            UpdateLabelSizeText();
 
             var previewPdfPath = await _labelTemplateService.GeneratePreviewPdfAsync(
                 TemplateJsonText,

@@ -1,0 +1,77 @@
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Tahoma, "Microsoft YaHei", "Segoe UI", Arial, Helvetica, sans-serif; font-size: 5pt; line-height: 1.1; color: #000; word-break: break-word; }
+
+  /* 60mm x 80mm 标签（去除条码区域，直接打印环保标签） */
+  .label { width: 58.5mm; height: 78.5mm; border: 0.7pt solid #000; overflow: hidden; }
+  .section-sep { border-bottom: 0.5pt solid #000; }
+
+  /* 商品名称 */
+  .product-name-section { height: 7mm; display: table; width: 100%; padding: 0 2pt; }
+  .product-name-inner { display: table-cell; vertical-align: middle; }
+  .product-name-label { font-weight: 700; font-size: 5.6pt; }
+  .product-name-value { font-weight: 600; font-size: 5.6pt; }
+
+  /* 制造商 */
+  .manufacturer-section { height: 13mm; display: table; width: 100%; overflow: hidden; }
+  .manufacturer-inner { display: table-cell; vertical-align: middle; }
+  .kv { padding: 0.4pt 2pt; font-size: 4.9pt; line-height: 1.12; font-weight: 600; }
+  .kv-label { font-weight: 700; }
+  .kv-value { font-weight: 500; }
+
+  /* 授权代表 */
+  .reps-section { height: 23mm; padding: 0; overflow: hidden; }
+  .rep-stack { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; }
+  .rep-badges-cell { width: 9mm; padding: 1.5pt 1pt; border-right: 0.5pt solid #000; vertical-align: middle; }
+  .rep-info { padding: 1.2pt 1.6pt; font-size: 4.6pt; line-height: 1.06; vertical-align: middle; }
+  .rep-name { font-size: 4.9pt; font-weight: 700; line-height: 1.04; }
+  .rep-address { font-weight: 500; }
+  .badge-grid { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  .badge { border: 0.5pt solid #000; font-weight: 700; font-size: 4.6pt; padding: 0.8pt 0; text-align: center; }
+
+  /* 进口商 */
+  .importer-section { height: 18mm; display: table; width: 100%; overflow: hidden; }
+  .importer-inner { display: table-cell; vertical-align: middle; padding: 1.2pt 2pt; }
+  .importer-block { margin-bottom: 0.4pt; }
+  .importer-block-last { margin-bottom: 0; }
+  .importer-title { font-size: 4.9pt; font-weight: 700; line-height: 1.04; }
+  .imp-line { font-size: 4.5pt; line-height: 1.04; }
+  .imp-inline-label { font-weight: 700; }
+  .imp-inline-value { font-weight: 500; }
+
+  /* 底部信息行 */
+  .bottom-info-section { height: 7mm; display: table; width: 100%; table-layout: fixed; }
+  .bottom-info-cell { display: table-cell; vertical-align: middle; padding: 1.2pt 2pt; font-size: 4.6pt; font-weight: 600; border-right: 0.5pt solid #000; }
+  .bottom-info-cell-last { border-right: none; }
+
+  /* 环保标识（占据底部剩余空间） */
+  .footer-section { height: 10.5mm; display: table; width: 100%; }
+  .footer-inner { display: table-cell; vertical-align: middle; text-align: center; padding: 0pt 1pt; }
+  .footer-image { display: block; width: 56mm; max-width: 100%; height: auto; max-height: 10mm; margin: 0 auto; }
+</style>
+
+<div class="label">
+
+  <!-- 商品名称 -->
+  <div class="product-name-section section-sep">
+    <div class="product-name-inner"><span class="product-name-label">{{PRODUCT_NAME_LABEL}}:</span> <span class="product-name-value">{{PRODUCT_NAME_VALUE}}</span></div>
+  </div>
+
+  <!-- 制造商信息 -->
+  <div class="manufacturer-section section-sep"><div class="manufacturer-inner">{{MANUFACTURER_DETAILS}}</div></div>
+
+  <!-- 授权代表 -->
+  <div class="reps-section section-sep">{{REPRESENTATIVES_CONTENT}}</div>
+
+  <!-- 进口商信息 -->
+  {{IMPORTER_ROW}}
+
+  <!-- 底部信息行 -->
+  {{BOTTOM_INFO_ROW}}
+
+  <!-- 环保标识（全宽） -->
+  <div class="footer-section">
+    <div class="footer-inner">{{FOOTER_IMAGE_CONTENT}}</div>
+  </div>
+
+</div>

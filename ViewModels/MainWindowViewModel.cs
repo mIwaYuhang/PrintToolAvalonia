@@ -130,7 +130,8 @@ public partial class MainWindowViewModel : ViewModelBase
     public ObservableCollection<Platform> Platforms { get; } = new()
     {
         Platform.TEMU,
-        Platform.SHEIN
+        Platform.SHEIN,
+        Platform.SHEIN_SPECIAL
     };
     
     private Platform _selectedPlatform = Platform.TEMU;
@@ -298,11 +299,11 @@ public partial class MainWindowViewModel : ViewModelBase
     /// <summary>
     /// 计算环保码数量
     /// TEMU 平台：BarcodePageCount - MainOrderPageCount + 1（最小为 0）
-    /// SHEIN 平台：BarcodePageCount
+    /// SHEIN / 冷希音特供款 平台：BarcodePageCount
     /// </summary>
     private int CalculateEcoCodeQuantity()
     {
-        if (SelectedPlatform == Platform.SHEIN)
+        if (SelectedPlatform == Platform.SHEIN || SelectedPlatform == Platform.SHEIN_SPECIAL)
         {
             return BarcodePageCount;
         }
@@ -896,7 +897,14 @@ public partial class MainWindowViewModel : ViewModelBase
 
             string? barcodePdfPath = BarcodeFiles.Count > 0 ? BarcodeFiles[0].Path : null;
 
-            await viewModel.InitializeAsync(template, barcodePdfPath, 1, true);
+            var newTemplateVariant = SelectedPlatform switch
+            {
+                Platform.SHEIN => "shein",
+                Platform.SHEIN_SPECIAL => "shein_special",
+                _ => "temu"
+            };
+
+            await viewModel.InitializeAsync(template, barcodePdfPath, 1, true, newTemplateVariant);
             dialog.DataContext = viewModel;
             await dialog.ShowDialog(GetMainWindow());
 

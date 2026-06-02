@@ -17,8 +17,8 @@
         <Border Grid.Row="0" Classes="card" Padding="15" Margin="0,0,0,15">
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="15">
                 <StackPanel Grid.Column="0" Spacing="10">
-                    <TextBlock Text="100mm x 100mm 模板标签打印" Classes="section-title"/>
-                    <TextBlock Text="模板由 JSON 配置驱动，条码会合并进模板 PDF。打印时会先输出当前主单页，再输出后续 100x100 模板标签。"
+                    <TextBlock Text="{Binding HeaderTitleText}" Classes="section-title"/>
+                    <TextBlock Text="{Binding HeaderDescriptionText}"
                                Classes="secondary"
                                TextWrapping="Wrap"/>
                 </StackPanel>
@@ -31,7 +31,7 @@
                         VerticalAlignment="Center">
                     <StackPanel Spacing="6">
                         <TextBlock Text="固定尺寸" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="100 x 100 mm" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding LabelSizeText}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </Grid>
@@ -320,7 +320,7 @@
                             BorderThickness="1"
                             CornerRadius="6"
                             Padding="12">
-                        <TextBlock Text="说明：每个条码分组只取首条条码，按组内数量生成 100x100 模板标签；点击“生成并打印”时会先打印左侧当前主单页，点击“补打模板标签”只补打模板标签。"
+                        <TextBlock Text="{Binding QueueHintText}"
                                    Classes="secondary"
                                    TextWrapping="Wrap"/>
                     </Border>

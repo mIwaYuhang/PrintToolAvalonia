@@ -1,6 +1,7 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:vm="using:PrintToolAvalonia.ViewModels"
+        xmlns:converters="using:PrintToolAvalonia.Converters"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
@@ -9,6 +10,10 @@
         Title="打印历史"
         Width="900" Height="600"
         WindowStartupLocation="CenterOwner">
+
+    <Window.Resources>
+        <converters:PlatformDisplayNameConverter x:Key="PlatformDisplayNameConverter"/>
+    </Window.Resources>
 
     <Design.DataContext>
         <vm:HistoryViewModel/>
@@ -55,8 +60,8 @@
                                        Binding="{Binding Timestamp, StringFormat='{}{0:yyyy-MM-dd HH:mm:ss}'}"
                                        Width="150"/>
                     <DataGridTextColumn Header="平台" 
-                                       Binding="{Binding Platform}"
-                                       Width="80"/>
+                                       Binding="{Binding Platform, Converter={StaticResource PlatformDisplayNameConverter}}"
+                                       Width="110"/>
                     <DataGridTextColumn Header="主单数量" 
                                        Binding="{Binding MainOrderCount}"
                                        Width="100"/>

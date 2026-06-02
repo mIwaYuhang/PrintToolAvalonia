@@ -41,6 +41,14 @@ public class LabelTemplateService : ILabelTemplateService
     private const float BarcodeFrameWidthMm = 97.4708f;
     private const float BarcodeFrameHeightMm = 20.8708f;
 
+    // 标准布局（TEMU / SHEIN）页面尺寸
+    private const float StandardPageWidthMm = 100f;
+    private const float StandardPageHeightMm = 100f;
+
+    // 冷希音特供款布局页面尺寸（不合成条码，纸张更小）
+    private const float SheinSpecialPageWidthMm = 60f;
+    private const float SheinSpecialPageHeightMm = 80f;
+
     public LabelTemplateService(IConfigService configService, IPrintService printService)
     {
         _configService = configService;
@@ -166,7 +174,7 @@ public class LabelTemplateService : ILabelTemplateService
                 outputDirectory,
                 $"template-label-{DateTime.Now:yyyyMMddHHmmss}-{Guid.NewGuid():N}.pdf");
 
-            var pageSize = new PageSize(MillimetersToPoints(100), MillimetersToPoints(100));
+            var pageSize = GetPageSizeForTemplate(template);
             using var writer = new PdfWriter(outputPath);
             using var pdfDocument = new ITextPdfDocument(writer);
 
@@ -177,6 +185,10 @@ public class LabelTemplateService : ILabelTemplateService
                 var hasBarcodeSource = !string.IsNullOrWhiteSpace(labelSource.BarcodePdfPath) && labelSource.BarcodePageNumber.HasValue;
                 var html = BuildLabelHtml(template, hasBarcodeSource, includeImporterInfo, allowBarcodePlaceholder, footerImageBytes, labelSource.ProductNameEnglish);
                 AddHtmlPage(pdfDocument, pageSize, html);
+
+                // 冷希音特供款：不合成条码，直接输出环保标签（跳过条码覆盖）
+                if (IsSheinSpecialLayout(template))
+                    continue;
 
                 if (hasBarcodeSource && IsTemuLayout(template))
                     AddBarcodeOverlay(pdfDocument, labelSource.BarcodePdfPath!, labelSource.BarcodePageNumber!.Value);
@@ -296,6 +308,9 @@ public class LabelTemplateService : ILabelTemplateService
         byte[]? footerImageBytes,
         string productNameEnglish = "")
     {
+        if (IsSheinSpecialLayout(template))
+            return BuildSheinSpecialLabelHtml(template, includeImporterInfo, footerImageBytes, productNameEnglish);
+
         if (IsSheinLayout(template))
             return BuildSheinLabelHtml(template, hasBarcodeSource, includeImporterInfo, allowBarcodePlaceholder, footerImageBytes, productNameEnglish);
 
@@ -522,7 +537,8 @@ public class LabelTemplateService : ILabelTemplateService
 
         // 使用 table 实现固定高度（iText 对 table height 支持较好）
         var isShein = string.Equals(template.LayoutVariant, "shein", StringComparison.OrdinalIgnoreCase);
-        var tableHeight = isShein ? "25mm" : "";
+        var isSheinSpecial = string.Equals(template.LayoutVariant, "shein_special", StringComparison.OrdinalIgnoreCase);
+        var tableHeight = isShein ? "25mm" : isSheinSpecial ? "23mm" : "";
         var tableStyle = !string.IsNullOrEmpty(tableHeight) ? $" style='height:{tableHeight};'" : "";
 
         var sb = new StringBuilder();
@@ -619,9 +635,26 @@ public class LabelTemplateService : ILabelTemplateService
         return string.Equals(template.LayoutVariant, "shein", StringComparison.OrdinalIgnoreCase);
     }
 
+    private static bool IsSheinSpecialLayout(LabelTemplateConfig template)
+    {
+        return string.Equals(template.LayoutVariant, "shein_special", StringComparison.OrdinalIgnoreCase);
+    }
+
     private static bool IsTemuLayout(LabelTemplateConfig template)
     {
-        return !IsSheinLayout(template);
+        return !IsSheinLayout(template) && !IsSheinSpecialLayout(template);
+    }
+
+    /// <summary>
+    /// 根据模板布局变体返回对应的 PDF 页面尺寸。
+    /// 冷希音特供款使用 60x80，其余使用 100x100。
+    /// </summary>
+    private static PageSize GetPageSizeForTemplate(LabelTemplateConfig template)
+    {
+        if (IsSheinSpecialLayout(template))
+            return new PageSize(MillimetersToPoints(SheinSpecialPageWidthMm), MillimetersToPoints(SheinSpecialPageHeightMm));
+
+        return new PageSize(MillimetersToPoints(StandardPageWidthMm), MillimetersToPoints(StandardPageHeightMm));
     }
 
     private string? _sheinLabelLayoutHtmlCache;
@@ -637,6 +670,92 @@ public class LabelTemplateService : ILabelTemplateService
         if (!File.Exists(path)) throw new FileNotFoundException($"希音标签布局模板文件不存在: {path}");
         _sheinLabelLayoutHtmlCache = File.ReadAllText(path);
         return _sheinLabelLayoutHtmlCache;
+    }
+
+    private string? _sheinSpecialLabelLayoutHtmlCache;
+
+    /// <summary>
+    /// 加载 shein_special_label_layout.html 模板文件（带缓存）
+    /// 冷希音特供款 60x80 布局，无条码区域。
+    /// </summary>
+    private string LoadSheinSpecialLabelLayoutHtml()
+    {
+        if (_sheinSpecialLabelLayoutHtmlCache != null) return _sheinSpecialLabelLayoutHtmlCache;
+
+        var path = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Resources", "label_templates", "shein_special_label_layout.html");
+        if (!File.Exists(path)) throw new FileNotFoundException($"冷希音特供款标签布局模板文件不存在: {path}");
+        _sheinSpecialLabelLayoutHtmlCache = File.ReadAllText(path);
+        return _sheinSpecialLabelLayoutHtmlCache;
+    }
+
+    /// <summary>
+    /// 构建冷希音特供款布局 HTML（60x80，不含条码区域，直接打印环保标签）
+    /// </summary>
+    private string BuildSheinSpecialLabelHtml(
+        LabelTemplateConfig template,
+        bool includeImporterInfo,
+        byte[]? footerImageBytes,
+        string productNameEnglish)
+    {
+        var html = LoadSheinSpecialLabelLayoutHtml();
+
+        // 1. 商品名称
+        html = html.Replace("{{PRODUCT_NAME_LABEL}}", Esc(template.ProductNameLabel));
+        html = html.Replace("{{PRODUCT_NAME_VALUE}}", Esc(
+            string.IsNullOrWhiteSpace(productNameEnglish) ? "Sample Product" : productNameEnglish));
+
+        // 2. 制造商
+        var mfgSb = new StringBuilder();
+        var manufacturerItems = new[]
+        {
+            (Label: template.ManufacturerLabel, Value: template.ManufacturerName),
+            (Label: template.ManufacturerEmailLabel, Value: template.ManufacturerEmail),
+            (Label: template.AddressLabel, Value: template.ManufacturerAddress)
+        }
+        .Where(item => !string.IsNullOrWhiteSpace(item.Label) || !string.IsNullOrWhiteSpace(item.Value))
+        .ToList();
+        for (var index = 0; index < manufacturerItems.Count; index++)
+        {
+            var item = manufacturerItems[index];
+            AppendKvHtml(mfgSb, item.Label, item.Value, index == manufacturerItems.Count - 1);
+        }
+        html = html.Replace("{{MANUFACTURER_DETAILS}}", mfgSb.ToString());
+
+        // 3. 授权代表（EU REP / TR REP / UK REP）
+        html = html.Replace("{{REPRESENTATIVES_CONTENT}}", BuildRepresentativesHtml(template));
+
+        // 4. 进口商
+        if (includeImporterInfo && HasImporterInfo(template.ImporterInfo))
+        {
+            var importerRow = $@"<div class='importer-section section-sep'><div class='importer-inner'>{BuildImporterSectionsHtml(template.ImporterInfo)}</div></div>";
+            html = html.Replace("{{IMPORTER_ROW}}", importerRow);
+        }
+        else
+        {
+            html = html.Replace("{{IMPORTER_ROW}}", "");
+        }
+
+        // 5. 底部信息行（Batch Number | Made in China | PP 5）
+        var bottomInfoSb = new StringBuilder();
+        bottomInfoSb.Append("<div class='bottom-info-section section-sep'>");
+        bottomInfoSb.Append($"<div class='bottom-info-cell'><span class='kv-label'>{Esc(template.BatchNumberLabel)}:</span> <span class='kv-value'>{Esc(template.BatchNumber)}</span></div>");
+        bottomInfoSb.Append($"<div class='bottom-info-cell'>{Esc(template.MadeInText)}</div>");
+        bottomInfoSb.Append($"<div class='bottom-info-cell bottom-info-cell-last'>{Esc(template.PackagingMaterialText)}</div>");
+        bottomInfoSb.Append("</div>");
+        html = html.Replace("{{BOTTOM_INFO_ROW}}", bottomInfoSb.ToString());
+
+        // 6. 环保标识图片
+        if (footerImageBytes != null)
+        {
+            html = html.Replace("{{FOOTER_IMAGE_CONTENT}}",
+                $"<img class='footer-image' src='data:image/png;base64,{Convert.ToBase64String(footerImageBytes)}' />");
+        }
+        else
+        {
+            html = html.Replace("{{FOOTER_IMAGE_CONTENT}}", "");
+        }
+
+        return html;
     }
 
     /// <summary>

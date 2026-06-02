@@ -113,7 +113,7 @@
                         <Border Background="#F0F2F5"
                                 CornerRadius="4"
                                 Padding="10,6">
-                            <TextBlock Text="100mm × 100mm"
+                            <TextBlock Text="{Binding LabelSizeText}"
                                        FontWeight="SemiBold"
                                        FontSize="13"
                                        HorizontalAlignment="Center"/>

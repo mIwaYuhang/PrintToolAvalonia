@@ -13,6 +13,7 @@
 
     <Window.Resources>
         <converters:PlatformToRuleConverter x:Key="PlatformToRuleConverter"/>
+        <converters:PlatformDisplayNameConverter x:Key="PlatformDisplayNameConverter"/>
     </Window.Resources>
 
     <Design.DataContext>
@@ -52,7 +53,13 @@
                              SelectedItem="{Binding SelectedPlatform}"
                              Width="200"
                              HorizontalAlignment="Left"
-                             Margin="0,0,0,10"/>
+                             Margin="0,0,0,10">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Converter={StaticResource PlatformDisplayNameConverter}}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
 
                     <!-- 文件区域 -->
                     <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10">
@@ -262,7 +269,7 @@
                                           FontSize="12">
                                     <TextBlock.Text>
                                         <MultiBinding StringFormat="计算规则: {0} 平台 - {1}">
-                                            <Binding Path="SelectedPlatform"/>
+                                            <Binding Path="SelectedPlatform" Converter="{StaticResource PlatformDisplayNameConverter}"/>
                                             <Binding Path="SelectedPlatform" Converter="{StaticResource PlatformToRuleConverter}"/>
                                         </MultiBinding>
                                     </TextBlock.Text>

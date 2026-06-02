@@ -36,9 +36,45 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
     private Platform _currentPlatform = Platform.TEMU;
 
     /// <summary>
-    /// 当前是否为希音平台（用于 UI 显示商品名称列）
+    /// 当前是否需要显示商品名称（希音与冷希音特供款均需要按条码选择商品名称）
     /// </summary>
-    public bool IsSheinPlatform => _currentPlatform == Platform.SHEIN;
+    public bool IsSheinPlatform => _currentPlatform == Platform.SHEIN || _currentPlatform == Platform.SHEIN_SPECIAL;
+
+    /// <summary>
+    /// 当前是否为冷希音特供款（不合成条码，使用 60x80 布局）
+    /// </summary>
+    public bool IsSheinSpecialPlatform => _currentPlatform == Platform.SHEIN_SPECIAL;
+
+    /// <summary>
+    /// 标签尺寸（毫米），冷希音特供款为 60x80，其余为 100x100
+    /// </summary>
+    public int LabelWidthMm => _currentPlatform == Platform.SHEIN_SPECIAL ? 60 : 100;
+
+    public int LabelHeightMm => _currentPlatform == Platform.SHEIN_SPECIAL ? 80 : 100;
+
+    /// <summary>
+    /// 标签尺寸文本（如 "60 x 80 mm"）
+    /// </summary>
+    public string LabelSizeText => $"{LabelWidthMm} x {LabelHeightMm} mm";
+
+    /// <summary>
+    /// 对话框标题文本
+    /// </summary>
+    public string HeaderTitleText => $"{LabelWidthMm}mm x {LabelHeightMm}mm 模板标签打印";
+
+    /// <summary>
+    /// 对话框说明文本
+    /// </summary>
+    public string HeaderDescriptionText => IsSheinSpecialPlatform
+        ? $"冷希音特供款：不合成条码，直接打印 {LabelWidthMm}x{LabelHeightMm} 环保标签。打印时仍可选择条码分组与商品名称，但条码不会合并进标签。"
+        : $"模板由 JSON 配置驱动，条码会合并进模板 PDF。打印时会先输出当前主单页，再输出后续 {LabelWidthMm}x{LabelHeightMm} 模板标签。";
+
+    /// <summary>
+    /// 队列底部说明文本
+    /// </summary>
+    public string QueueHintText => IsSheinSpecialPlatform
+        ? $"说明：冷希音特供款不合成条码，每个条码分组按组内数量生成 {LabelWidthMm}x{LabelHeightMm} 环保标签；点击\u201c生成并打印\u201d时会先打印左侧当前主单页，点击\u201c补打模板标签\u201d只补打模板标签。"
+        : $"说明：每个条码分组只取首条条码，按组内数量生成 {LabelWidthMm}x{LabelHeightMm} 模板标签；点击\u201c生成并打印\u201d时会先打印左侧当前主单页，点击\u201c补打模板标签\u201d只补打模板标签。";
 
     public Window? OwnerWindow { get; set; }
 
@@ -160,6 +196,14 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
     {
         _mainOrderPdfPath = mainOrderPdfPath;
         _currentPlatform = platform;
+        OnPropertyChanged(nameof(IsSheinPlatform));
+        OnPropertyChanged(nameof(IsSheinSpecialPlatform));
+        OnPropertyChanged(nameof(LabelWidthMm));
+        OnPropertyChanged(nameof(LabelHeightMm));
+        OnPropertyChanged(nameof(LabelSizeText));
+        OnPropertyChanged(nameof(HeaderTitleText));
+        OnPropertyChanged(nameof(HeaderDescriptionText));
+        OnPropertyChanged(nameof(QueueHintText));
         await LoadTemplatesAsync();
         await LoadProductNamesAsync();
         await InitializeMainOrderAsync(initialPage);
@@ -325,14 +369,14 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             return;
         }
 
-        // 希音平台：校验每个待打印分组必须填写商品名称（英文）
-        if (_currentPlatform == Platform.SHEIN)
+        // 希音 / 冷希音特供款：校验每个待打印分组必须填写商品名称（英文）
+        if (IsSheinPlatform)
         {
             var missingProductName = pendingItems.Where(item => string.IsNullOrWhiteSpace(item.ProductNameEnglish)).ToList();
             if (missingProductName.Count > 0)
             {
                 var groupInfo = string.Join("、", missingProductName.Select(item => item.GroupDisplay));
-                await ShowErrorAsync($"以下分组未设置商品名称（英文打印名）：{groupInfo}\n\n希音平台要求每个条码分组必须设置商品名称。");
+                await ShowErrorAsync($"以下分组未设置商品名称（英文打印名）：{groupInfo}\n\n该平台要求每个条码分组必须设置商品名称。");
                 return;
             }
         }
@@ -356,12 +400,20 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 return;
             }
 
+            // 冷希音特供款：模板标签使用环保码打印机，需要校验其配置
+            var templateLabelPrinter = GetTemplateLabelPrinter(config);
+            if (IsSheinSpecialPlatform && string.IsNullOrWhiteSpace(templateLabelPrinter.PrinterName))
+            {
+                await ShowErrorAsync("请先在设置中配置环保码打印机");
+                return;
+            }
+
             var jobs = new List<PrintJob>();
 
-            // 希音平台：只有一个面单，仅在第一次首打时打印主单
+            // 希音 / 冷希音特供款：只有一个面单，仅在第一次首打时打印主单
             // Temu 平台：每次打印都先输出当前主单页
             bool shouldPrintMainOrder;
-            if (_currentPlatform == Platform.SHEIN)
+            if (IsSheinPlatform)
             {
                 // 希音：只有当队列中没有任何已完成首打的分组时，才打印主单（即第一次打印）
                 shouldPrintMainOrder = !QueueItems.Any(item => item.IsBasePrintCompleted);
@@ -393,7 +445,7 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 pendingItems,
                 item => item.LabelCount,
                 IncludeImporterInfo,
-                config.MainOrderPrinter.PrinterName,
+                templateLabelPrinter.PrinterName,
                 "模板标签"));
 
             StatusMessage = shouldPrintMainOrder
@@ -449,14 +501,14 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             return;
         }
 
-        // 希音平台：补打也需要校验商品名称
-        if (_currentPlatform == Platform.SHEIN)
+        // 希音 / 冷希音特供款：补打也需要校验商品名称
+        if (IsSheinPlatform)
         {
             var missingProductName = reprintItems.Where(item => string.IsNullOrWhiteSpace(item.ProductNameEnglish)).ToList();
             if (missingProductName.Count > 0)
             {
                 var groupInfo = string.Join("、", missingProductName.Select(item => item.GroupDisplay));
-                await ShowErrorAsync($"以下分组未设置商品名称（英文打印名）：{groupInfo}\n\n希音平台要求每个条码分组必须设置商品名称。");
+                await ShowErrorAsync($"以下分组未设置商品名称（英文打印名）：{groupInfo}\n\n该平台要求每个条码分组必须设置商品名称。");
                 return;
             }
         }
@@ -468,15 +520,12 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             var reprintLabelCount = reprintItems.Sum(item => item.ReprintCount);
 
             var config = await _databaseService.GetConfigAsync();
-            if (string.IsNullOrWhiteSpace(config.MainOrderPrinter.PrinterName))
-            {
-                await ShowErrorAsync("请先在设置中配置主单打印机");
-                return;
-            }
 
-            if (config.MainOrderPrinter.PaperWidthMm <= 0 || config.MainOrderPrinter.PaperHeightMm <= 0)
+            // 冷希音特供款：模板标签使用环保码打印机；其余使用主单打印机
+            var templateLabelPrinter = GetTemplateLabelPrinter(config);
+            if (string.IsNullOrWhiteSpace(templateLabelPrinter.PrinterName))
             {
-                await ShowErrorAsync("请先在设置中配置主单打印机纸张尺寸");
+                await ShowErrorAsync($"请先在设置中配置{GetTemplateLabelPrinterDisplayName()}");
                 return;
             }
 
@@ -485,7 +534,7 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 reprintItems,
                 item => item.ReprintCount,
                 IncludeImporterInfo,
-                config.MainOrderPrinter.PrinterName,
+                templateLabelPrinter.PrinterName,
                 "模板标签补打");
 
             StatusMessage = "补打打印任务已生成，正在打印模板标签...";
@@ -657,8 +706,8 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                 {
                     FilePath = pdfPath,
                     PrinterName = printerName,
-                    PaperWidthMm = 100,
-                    PaperHeightMm = 100,
+                    PaperWidthMm = LabelWidthMm,
+                    PaperHeightMm = LabelHeightMm,
                     Copies = copies
                 },
                 Description = $"{descriptionPrefix}: {template.Name} 第{item.BarcodeGroup.StartPage}-{item.BarcodeGroup.EndPage}页 ({copies}份)"
@@ -697,8 +746,13 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             var templates = await _labelTemplateService.GetTemplatesAsync();
             TemplateConfigs.Clear();
 
-            // 按平台过滤模板：希音只显示 shein 模板，Temu 只显示 temu 模板
-            var expectedVariant = _currentPlatform == Platform.SHEIN ? "shein" : "temu";
+            // 按平台过滤模板：希音只显示 shein 模板，冷希音特供款显示 shein_special 模板，Temu 只显示 temu 模板
+            var expectedVariant = _currentPlatform switch
+            {
+                Platform.SHEIN => "shein",
+                Platform.SHEIN_SPECIAL => "shein_special",
+                _ => "temu"
+            };
             foreach (var template in templates)
             {
                 var variant = string.IsNullOrWhiteSpace(template.LayoutVariant) ? "temu" : template.LayoutVariant.ToLowerInvariant();
@@ -713,13 +767,39 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
                     ?? TemplateConfigs.FirstOrDefault()
                 : TemplateConfigs.FirstOrDefault();
             StatusMessage = TemplateConfigs.Count == 0
-                ? $"未找到{(_currentPlatform == Platform.SHEIN ? "希音" : "Temu")}模板，请先新建对应模板配置"
+                ? $"未找到{GetPlatformDisplayName()}模板，请先新建对应模板配置"
                 : "请选择条码分组加入待打印队列";
         }
         catch (Exception ex)
         {
             await ShowErrorAsync($"加载模板失败: {ex.Message}");
         }
+    }
+
+    private string GetPlatformDisplayName()
+    {
+        return _currentPlatform switch
+        {
+            Platform.SHEIN => "希音",
+            Platform.SHEIN_SPECIAL => "冷希音特供款",
+            _ => "Temu"
+        };
+    }
+
+    /// <summary>
+    /// 模板标签使用的打印机：冷希音特供款使用环保码打印机，其余使用主单打印机
+    /// </summary>
+    private PrinterConfig GetTemplateLabelPrinter(AppConfig config)
+    {
+        return IsSheinSpecialPlatform ? config.EcoCodePrinter : config.MainOrderPrinter;
+    }
+
+    /// <summary>
+    /// 模板标签打印机的名称（用于提示文案）
+    /// </summary>
+    private string GetTemplateLabelPrinterDisplayName()
+    {
+        return IsSheinSpecialPlatform ? "环保码打印机" : "主单打印机";
     }
 
     private async Task OpenTemplateEditorAsync(LabelTemplateConfig? template)
@@ -737,7 +817,14 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             var previewBarcodePageNumber = GetPreviewBarcodePageNumber();
             var previewBarcodePdfPath = GetPreviewBarcodePdfPath();
 
-            await viewModel.InitializeAsync(template, previewBarcodePdfPath, previewBarcodePageNumber, IncludeImporterInfo);
+            var newTemplateVariant = _currentPlatform switch
+            {
+                Platform.SHEIN => "shein",
+                Platform.SHEIN_SPECIAL => "shein_special",
+                _ => "temu"
+            };
+
+            await viewModel.InitializeAsync(template, previewBarcodePdfPath, previewBarcodePageNumber, IncludeImporterInfo, newTemplateVariant);
             dialog.DataContext = viewModel;
             await dialog.ShowDialog(OwnerWindow ?? GetDialogOwner());
 
@@ -826,8 +913,8 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
             IsScanningBarcode = true;
             StatusMessage = "正在识别条码分组...";
 
-            // 根据平台选择分隔符模板
-            var separatorFileName = _currentPlatform == Platform.SHEIN
+            // 根据平台选择分隔符模板（希音与冷希音特供款使用希音分隔符）
+            var separatorFileName = IsSheinPlatform
                 ? "shien_separator_template.png"
                 : "separator_template.png";
 

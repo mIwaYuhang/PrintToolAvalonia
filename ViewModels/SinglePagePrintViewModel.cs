@@ -140,8 +140,8 @@ public partial class SinglePagePrintViewModel : ViewModelBase
                 return;
             }
             
-            // 加载分隔符模板
-            var separatorFileName = _currentPlatform == Platform.SHEIN
+            // 加载分隔符模板（希音与冷希音特供款使用希音分隔符）
+            var separatorFileName = (_currentPlatform == Platform.SHEIN || _currentPlatform == Platform.SHEIN_SPECIAL)
                 ? "shien_separator_template.png"
                 : "separator_template.png";
 
