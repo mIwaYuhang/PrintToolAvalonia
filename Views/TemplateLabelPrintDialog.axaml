@@ -255,12 +255,19 @@
                                                                       Classes="secondary"/>
                                                         </Grid>
                                                     </StackPanel>
-                                                    <Button Grid.Column="2"
-                                                            Content="删除"
-                                                            Command="{Binding $parent[Window].DataContext.RemoveQueueItemCommand}"
-                                                            CommandParameter="{Binding}"
-                                                            Classes="danger"
-                                                            MinWidth="80"/>
+                                                    <StackPanel Grid.Column="2" Spacing="6">
+                                                        <Button Content="导出 1 张 PDF"
+                                                                Command="{Binding $parent[Window].DataContext.ExportSinglePdfCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Classes="secondary"
+                                                                IsEnabled="{Binding !$parent[Window].DataContext.IsPrinting}"
+                                                                MinWidth="110"/>
+                                                        <Button Content="删除"
+                                                                Command="{Binding $parent[Window].DataContext.RemoveQueueItemCommand}"
+                                                                CommandParameter="{Binding}"
+                                                                Classes="danger"
+                                                                MinWidth="110"/>
+                                                    </StackPanel>
                                                 </Grid>
                                                 <!-- 商品名称行（希音平台显示） -->
                                                 <Border Background="#F5F7FA"

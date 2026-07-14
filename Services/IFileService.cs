@@ -42,4 +42,13 @@ public interface IFileService
     /// <param name="owner">父窗口</param>
     /// <returns>选择的文件路径数组</returns>
     Task<string[]> OpenFileDialogAsync(string filter, Avalonia.Controls.Window? owner);
+
+    /// <summary>
+    /// 将 PDF 保存到用户选择的位置。
+    /// </summary>
+    /// <param name="sourcePath">待保存的 PDF 路径</param>
+    /// <param name="suggestedFileName">建议文件名</param>
+    /// <param name="owner">父窗口</param>
+    /// <returns>保存成功后的文件路径；用户取消时返回 null</returns>
+    Task<string?> SavePdfAsync(string sourcePath, string suggestedFileName, Avalonia.Controls.Window? owner);
 }

@@ -276,6 +276,72 @@ public partial class TemplateLabelPrintViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task ExportSinglePdfAsync(TemplateLabelQueueItem? item)
+    {
+        if (item == null)
+        {
+            return;
+        }
+
+        if (SelectedTemplateConfig == null)
+        {
+            await ShowErrorAsync("请先选择模板");
+            return;
+        }
+
+        if (IsSheinPlatform && string.IsNullOrWhiteSpace(item.ProductNameEnglish))
+        {
+            await ShowErrorAsync($"{item.GroupDisplay} 未设置商品名称（英文打印名）");
+            return;
+        }
+
+        try
+        {
+            IsPrinting = true;
+            StatusMessage = $"正在生成 {item.GroupDisplay} 的单张 PDF...";
+
+            var generatedPdfPath = await _labelTemplateService.GenerateLabelPdfAsync(
+                SelectedTemplateConfig,
+                item.BarcodePdfPath,
+                item.BarcodeGroup.StartPage,
+                IncludeImporterInfo,
+                item.ProductNameEnglish);
+
+            var suggestedFileName = BuildExportFileName(SelectedTemplateConfig, item);
+            var exportedPath = await _fileService.SavePdfAsync(generatedPdfPath, suggestedFileName, OwnerWindow);
+            if (exportedPath == null)
+            {
+                StatusMessage = "已取消导出";
+                return;
+            }
+
+            StatusMessage = $"已导出 1 张标签：{Path.GetFileName(exportedPath)}";
+            await ShowInfoAsync($"单张标签 PDF 已导出：\n{exportedPath}");
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "导出失败";
+            await ShowErrorAsync($"导出单张标签 PDF 失败: {ex.Message}");
+        }
+        finally
+        {
+            IsPrinting = false;
+        }
+    }
+
+    private static string BuildExportFileName(LabelTemplateConfig template, TemplateLabelQueueItem item)
+    {
+        var sourceName = Path.GetFileNameWithoutExtension(item.BarcodePdfPath);
+        var fileName = $"{template.Name}_{sourceName}_第{item.BarcodeGroup.StartPage}页.pdf";
+        foreach (var invalidChar in Path.GetInvalidFileNameChars())
+        {
+            fileName = fileName.Replace(invalidChar, '_');
+        }
+
+        return fileName;
+    }
+
+    [RelayCommand]
     private void RemoveQueueItem(TemplateLabelQueueItem? item)
     {
         if (item == null)

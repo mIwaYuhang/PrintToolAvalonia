@@ -361,7 +361,9 @@ public class LabelTemplateService : ILabelTemplateService
         html = html.Replace("{{MANUFACTURER_DETAILS}}", mfgSb.ToString());
 
         // 3. 授权代表
-        html = html.Replace("{{REPRESENTATIVES_CONTENT}}", BuildRepresentativesHtml(template));
+        html = html.Replace("{{REPRESENTATIVES_CONTENT}}", BuildRepresentativesHtml(
+            template,
+            showImporter ? 28.8 : 44));
 
         // 4. 进口商：标题栏 + 内容行
         if (showImporter)
@@ -526,7 +528,7 @@ public class LabelTemplateService : ILabelTemplateService
         sb.Append("</div>");
     }
 
-    private static string BuildRepresentativesHtml(LabelTemplateConfig template)
+    private static string BuildRepresentativesHtml(LabelTemplateConfig template, double? totalHeightMm = null)
     {
         var items = template.Representatives
             .Where(r => !string.IsNullOrWhiteSpace(r.RegionCode) || !string.IsNullOrWhiteSpace(r.Name) || !string.IsNullOrWhiteSpace(r.Address) || !string.IsNullOrWhiteSpace(r.Email))
@@ -535,26 +537,28 @@ public class LabelTemplateService : ILabelTemplateService
 
         if (items.Count == 0) return "";
 
-        // 使用 table 实现固定高度（iText 对 table height 支持较好）
         var isShein = string.Equals(template.LayoutVariant, "shein", StringComparison.OrdinalIgnoreCase);
         var isSheinSpecial = string.Equals(template.LayoutVariant, "shein_special", StringComparison.OrdinalIgnoreCase);
-        var tableHeight = isShein ? "25mm" : isSheinSpecial ? "23mm" : "";
-        var tableStyle = !string.IsNullOrEmpty(tableHeight) ? $" style='height:{tableHeight};'" : "";
+        var tableHeightMm = totalHeightMm ?? (isShein ? 25 : isSheinSpecial ? 23 : (double?)null);
+        var tableStyle = tableHeightMm.HasValue ? $" style='height:{tableHeightMm.Value:0.###}mm;'" : "";
+        var rowHeightStyle = tableHeightMm.HasValue
+            ? $"height:{tableHeightMm.Value / items.Count:0.###}mm;"
+            : "";
 
         var sb = new StringBuilder();
         sb.Append($"<table class='rep-stack' cellspacing='0' cellpadding='0'{tableStyle}>");
         for (var index = 0; index < items.Count; index++)
         {
             var rep = items[index];
-            var borderStyle = index < items.Count - 1 ? "border-bottom:0.5pt solid #000;" : "";
-            sb.Append($"<tr style='{borderStyle}'>");
-            sb.Append("<td class='rep-badges-cell'>");
+            var rowClass = index == items.Count - 1 ? "rep-row rep-row-last" : "rep-row";
+            sb.Append($"<tr class='{rowClass}' style='{rowHeightStyle}'>");
+            sb.Append($"<td class='rep-badges-cell' style='{rowHeightStyle}'>");
             sb.Append("<table class='badge-grid' cellspacing='0' cellpadding='0'><tr>");
             sb.Append($"<td class='badge' style='width:50%;'>{Esc(rep.RegionCode)}</td>");
             sb.Append($"<td class='badge' style='width:50%;'>{Esc(template.RepresentativeLabel)}</td>");
             sb.Append("</tr></table>");
             sb.Append("</td>");
-            sb.Append("<td class='rep-info'>");
+            sb.Append($"<td class='rep-info' style='{rowHeightStyle}'>");
             if (!string.IsNullOrWhiteSpace(rep.Name))
                 sb.Append($"<div class='rep-name'>{Esc(rep.Name)}</div>");
             if (!string.IsNullOrWhiteSpace(rep.Address))

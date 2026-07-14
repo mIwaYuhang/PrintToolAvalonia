@@ -156,6 +156,50 @@ public class FileService : IFileService
     }
 
     /// <summary>
+    /// 将 PDF 保存到用户选择的位置
+    /// </summary>
+    public async Task<string?> SavePdfAsync(string sourcePath, string suggestedFileName, Window? owner)
+    {
+        if (!File.Exists(sourcePath))
+        {
+            throw new FileNotFoundException("待导出的 PDF 不存在", sourcePath);
+        }
+
+        var window = owner ?? GetMainWindow();
+        if (window == null)
+        {
+            throw new InvalidOperationException("无法获取文件保存窗口");
+        }
+
+        var pdfFileType = new FilePickerFileType("PDF Files")
+        {
+            Patterns = new[] { "*.pdf" },
+            MimeTypes = new[] { "application/pdf" }
+        };
+
+        var targetFile = await window.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
+        {
+            Title = "导出单张标签 PDF",
+            SuggestedFileName = suggestedFileName,
+            DefaultExtension = "pdf",
+            FileTypeChoices = new[] { pdfFileType },
+            ShowOverwritePrompt = true
+        });
+
+        if (targetFile == null)
+        {
+            return null;
+        }
+
+        await using var sourceStream = File.OpenRead(sourcePath);
+        await using var targetStream = await targetFile.OpenWriteAsync();
+        targetStream.SetLength(0);
+        await sourceStream.CopyToAsync(targetStream);
+        await targetStream.FlushAsync();
+        return targetFile.Path.LocalPath;
+    }
+
+    /// <summary>
     /// 获取主窗口（用于文件对话框）
     /// </summary>
     private Window? GetMainWindow()
