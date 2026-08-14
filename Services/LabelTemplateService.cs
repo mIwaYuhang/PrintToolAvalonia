@@ -458,7 +458,8 @@ public class LabelTemplateService : ILabelTemplateService
         // 3. 授权代表（EU REP / TR REP / UK REP）
         html = html.Replace("{{REPRESENTATIVES_CONTENT}}", BuildRepresentativesHtml(template));
 
-        // 4. 进口商
+        // 4. 进口商：固定保留该区域高度。即使不显示内容，也不能让下方条码上移，
+        // 否则会与使用固定坐标覆盖的条码 PDF 发生错位。
         if (includeImporterInfo && HasImporterInfo(template.ImporterInfo))
         {
             var importerRow = $@"<div class='importer-section section-sep'><div class='importer-inner'>{BuildImporterSectionsHtml(template.ImporterInfo)}</div></div>";
@@ -466,7 +467,7 @@ public class LabelTemplateService : ILabelTemplateService
         }
         else
         {
-            html = html.Replace("{{IMPORTER_ROW}}", "");
+            html = html.Replace("{{IMPORTER_ROW}}", "<div class='importer-section importer-placeholder section-sep'></div>");
         }
 
         // 5. 底部信息行（Batch Number | Made in China | PP 5）
